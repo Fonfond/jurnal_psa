@@ -4,6 +4,7 @@ dist
 **/dist
 .git
 .agent-teams
+.tools
 .gitignore
 .data
 coverage
@@ -14,6 +15,7 @@ coverage
 .tmp-*
 .write-test
 apps/web/dev-dist
+deploy/https
 db/postgres/certs
 screenshots
 docs/loadtest

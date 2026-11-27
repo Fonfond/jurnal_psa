@@ -11,6 +11,9 @@ coverage/
 .vite/
 apps/web/dev-dist/
 .agent-teams/
+.tools/
 .tmp-*
 .write-test
+pilot-*.png
+deploy/https/
 db/postgres/certs/

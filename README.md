@@ -5,10 +5,59 @@
 | Проект | Электронный оперативный журнал (PWA, offline-first) |
 | Версия пакета | 3.15 |
 | Состояние | Шаги 1–5, Phase 0/A, журнальный слой, auth-platform, мультижурнальность, смены/заземления, приёмка PostgreSQL 15 (TLS, backup/restore, PITR, HA), установка и эксплуатационная документация |
-| Готовность | **Release t33 — FAIL / NOT PASS**: технические F-01/F-02/F-04 закрыты (ANALYZE после fixture/нагрузки), E2E/a11y/fresh+upgrade 0001–0017/SCA зелёные; OQ-02 (IdP), OQ-04 (КЭП), OQ-05/18 (retention), G1/G2, Docker/Linux/pentest — внешние блокеры; p99 push ~2,5 с; production readiness не заявляется |
+| Готовность | **Release t33 — FAIL / NOT PASS**: технические F-01/F-02/F-04 закрыты (ANALYZE после fixture/нагрузки), E2E/a11y/fresh+upgrade 0001–0017/SCA зелёные; OQ-02 (IdP), OQ-04 (КЭП), OQ-05/18 (retention), G1/G2, production Linux/nginx/pentest — внешние блокеры; p99 push ~2,5 с; production readiness не заявляется. Локальный Docker-пилот проверен (README/PILOT-RUN), это не production |
 | Дата | 27.11.2026 |
 
 Этот каталог содержит результаты аудита исходного ТЗ (v1.0) и полный комплект документов, подготовленных к началу разработки. Исходное ТЗ сохранено без изменений как архив.
+
+## Быстрый старт (Docker, локальный пилот)
+
+Требуются Docker Desktop с Compose и свободные порты `3000` (HTTP), `3443` (HTTPS), `55432` (PostgreSQL). Это **локальный пилот**, не production: используются dev-вход и `SIGNATURE_PROVIDER=none`.
+
+```powershell
+docker compose -f docker-compose.pilot.yml up --build -d
+docker compose -f docker-compose.pilot.yml ps
+curl http://localhost:3000/v1/health
+```
+
+`seed`-контейнер сам применяет миграции `0001…0017`, выполняет seed и `ANALYZE`; после него стартует API и статика PWA. Если порт 3000 занят:
+
+```powershell
+$env:APP_PORT=3100; docker compose -f docker-compose.pilot.yml up --build -d
+```
+
+### Проверка на ПК
+
+1. Откройте `http://localhost:3000/` в Edge/Chromium.
+2. Войдите: `admin@logbook.local` / `Logbook!2026` (роль admin), `supervisor@logbook.local` или `worker@logbook.local` с тем же паролем.
+3. Проверьте журнал, создание записи, синхронизацию, `/admin` и печать/CSV.
+4. PWA/офлайн на `localhost` работает как secure context; для проверки установки используйте кнопку установки браузера.
+
+### Проверка на телефоне
+
+1. Узнайте LAN-IP ПК: `Get-NetIPAddress -AddressFamily IPv4`.
+2. Телефон в той же Wi-Fi-сети: `http://<LAN-IP>:3000/` — базовый HTTP-сценарий.
+3. Для PWA/офлайна нужен **HTTPS**. Сгенерируйте локальный сертификат (mkcert: `mkcert -cert-file deploy/https/pilot.crt -key-file deploy/https/pilot.key localhost 127.0.0.1 <LAN-IP>`) и запустите профиль `https`:
+   `docker compose -f docker-compose.pilot.yml --profile https up -d https`.
+   Nginx слушает `https://<LAN-IP>:3443/`; корневой CA — `deploy/https/rootCA.pem`.
+4. Установите `rootCA.pem` как доверенный CA на телефон (Android: Settings → Security → Install CA certificate; iOS: установить профиль и включить full trust), затем откройте `https://<LAN-IP>:3443/` и добавьте страницу на главный экран.
+5. На ПК этот CA также нужно добавить в «Доверенные корневые центры» вручную; автоматическая установка в текущем окружении заблокирована политикой UI. До доверия браузер покажет предупреждение сертификата.
+
+Если mkcert/CA установить нельзя, используйте временный туннель (`cloudflared tunnel --url http://localhost:3000`) **только для проверки**: трафик пойдёт через внешний сервис, реальные данные не вводить. В текущей сети исходящий туннель Cloudflare был заблокирован провайдером.
+
+### Остановка и очистка
+
+```powershell
+docker compose -f docker-compose.pilot.yml down
+docker compose -f docker-compose.pilot.yml down -v   # удалить БД пилота
+```
+
+### Ограничения пилота
+
+Статус проекта — **контролируемый пилот; production-релиз не одобрен**. Dev-вход и `none`-подпись допустимы только для локальной проверки. Юридически значимая ЭП/КЭП, реальный IdP/MFA, Linux/Docker/nginx runtime и pentest не закрыты. Подробно: [41_Пилотный_пакет.md](41_Пилотный_пакет.md), [38_Релизный_отчёт.md](38_Релизный_отчёт.md).
+
+Корневой `docker-compose.yml` сохранён как production/HA-профиль PostgreSQL (см. 35); полный локальный стек описан в `docker-compose.pilot.yml`.
+
 
 ## Состав пакета
 
@@ -57,6 +106,7 @@
 | 40 | [Отчёт: qualified ЭП и OIDC IdP/MFA harness](40_Отчёт_Qualified_ЭП_IdP_MFA.md) | Контракт sign/verify/error/timeout с тестовым HTTP-провайдером, OIDC harness по реальному HTTP, MFA admin (`E-OIDC-04`), redirect URI; блокеры/waiver внешних IdP/КЭП | Контракты проверены; реальные IdP/КЭП — внешние блокеры |
 | 41 | [Пакет контролируемого пилота](41_Пилотный_пакет.md) | Решение владельца: пилот разрешён, production не одобрен; условия, внешние блокеры, критерии остановки | Контролируемый пилот |
 | 42 | [Отчёт: REP-06 — атомарность аудита и journal_seq](42_Отчёт_REP-06.md) | `0015` durable `audit_outbox`, `0016` sequence-блоки/политика разрывов, upgrade 0014→0016, crash/rollback-тесты; push p95 349 мс | Выполнено |
+| 43 | [PILOT-RUN — локальный пилот](PILOT-RUN.md) | Docker, ПК, телефон HTTP/HTTPS, PWA/офлайн, stop/cleanup | Локальная проверка |
 | — | [RUNBOOK.md](RUNBOOK.md) | Запуск, миграции, seed, тесты, API, OIDC/устройства/ЭП, ограничения | 0.9.2 |
 | — | [ТЗ v1.0 (архив)](ТЗ_Электронный_оперативный_журнал.md) | Исходная редакция | Архив |
 

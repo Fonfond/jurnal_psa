@@ -9,9 +9,21 @@ import type { Env } from '../config/env';
 export const API_CONTENT_SECURITY_POLICY =
   "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
+/**
+ * The API also serves the pilot PWA.  The SPA needs its own script/style/
+ * worker policy; nginx applies the equivalent policy for the production
+ * split-origin setup.  Keep `connect-src 'self'` and no third-party origins.
+ */
+export const SPA_CONTENT_SECURITY_POLICY =
+  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
+  "img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; " +
+  "worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; " +
+  "base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+
 export function applySecurityHeaders(
   response: Response,
   env: Pick<Env, 'NODE_ENV' | 'HSTS_MAX_AGE_SECONDS'>,
+  isSpa = false,
 ): void {
   response.setHeader('X-Content-Type-Options', 'nosniff');
   response.setHeader('X-Frame-Options', 'DENY');
@@ -20,7 +32,10 @@ export function applySecurityHeaders(
     'Permissions-Policy',
     'geolocation=(), microphone=(), camera=(), payment=(), usb=()',
   );
-  response.setHeader('Content-Security-Policy', API_CONTENT_SECURITY_POLICY);
+  response.setHeader(
+    'Content-Security-Policy',
+    isSpa ? SPA_CONTENT_SECURITY_POLICY : API_CONTENT_SECURITY_POLICY,
+  );
   response.setHeader('Cross-Origin-Resource-Policy', 'same-site');
   response.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   response.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
@@ -34,8 +49,10 @@ export function applySecurityHeaders(
 }
 
 export function securityHeaders(env: Env): RequestHandler {
-  return (_request, response, next) => {
-    applySecurityHeaders(response, env);
+  return (request, response, next) => {
+    // API responses stay JSON/CSV/PDF; only the SPA shell/assets get a
+    // script-capable CSP.
+    applySecurityHeaders(response, env, !request.path.startsWith('/v1'));
     next();
   };
 }
