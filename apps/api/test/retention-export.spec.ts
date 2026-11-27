@@ -286,7 +286,7 @@ describe('WORM journal export with 3-column PDF and signed URL (JRN-07)', () => 
       .expect(200);
     const csvText = (csv.body as Buffer).toString('utf8');
     expect(csvText).toContain('journal_seq,date_time,content,visas_remarks');
-    expect(csvText).toContain('Заменён участок');
+    expect(csvText).toContain('Заменён автоматический выключатель');
     expect(csv.headers['x-content-sha256']).toBe(created.body.csv_sha256);
 
     const signature = await admin.agent

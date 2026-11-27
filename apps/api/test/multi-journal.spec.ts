@@ -373,12 +373,12 @@ describe('multi-journal catalogue and access (JRN-03)', () => {
       .expect(200);
     expect(filtered.headers['content-type']).toContain('text/csv');
     expect(filtered.text).toContain('Уникальный текст журнала подстанции');
-    expect(filtered.text).not.toContain('Заменён участок трубопровода');
+    expect(filtered.text).not.toContain('Заменён автоматический выключатель');
     expect(filtered.text).toContain('journal_key');
 
     // Without a filter the export keeps the old behaviour and all journals.
     const all = await admin.agent.get('/v1/journal/export').expect(200);
-    expect(all.text).toContain('Заменён участок трубопровода');
+    expect(all.text).toContain('Заменён автоматический выключатель');
     expect(all.text).toContain('Уникальный текст журнала подстанции');
   });
 

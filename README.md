@@ -26,7 +26,7 @@ docker compose -f docker-compose.pilot.yml ps
 curl http://localhost:3000/v1/health
 ```
 
-`seed`-контейнер сам применяет миграции `0001…0017`, выполняет seed и `ANALYZE`; после него стартует API и статика PWA. Если порт 3000 занят:
+`seed`-контейнер сам применяет миграции `0001…0017`, выполняет seed и `ANALYZE`; демо-наряды/записи по умолчанию **не создаются** (`SEED_DEMO_DATA=false`). После него стартует API и статика PWA. Если порт 3000 занят:
 
 ```powershell
 $env:APP_PORT=3100; docker compose -f docker-compose.pilot.yml up --build -d
@@ -144,8 +144,8 @@ Backend, PWA-клиент, офлайн-синхронизация и журна
 | `apps/api` | NestJS 11: auth/CSRF + OIDC, devices, journal, journals (мультижурнальность), shifts (сдача-приёмка смены), groundings (реестр заземлений), permits (PDF/signed URL, адаптеры источника), sync/merge (C-08…C-10), dictionaries, audit, admin, reviews/export |
 | `apps/web` | S-01…S-16 + админ-контур `/admin` (пользователи, роли, журналы, устройства, импорт нарядов, хранение, экспорт, аудит; ADR-14); S-15 «Смены», S-16 «Заземления», структурированные переключения 757; Dexie v5 с per-user IndexedDB (`logbook:user:<id>`) и device-базой, кэш руководителя 7 дней/15 МиБ, outbox (`entry`/`shift`), sync-engine, кастомный SW (Background/Periodic Sync), миграции IDB со снимком и откатом, офлайн-панель, ЭП-подсказки и подписи виз/записей/смен, интеграция S-02↔S-15↔S-16, PWA, печатные формы |
 | `packages/shared` | Типы `/v1`, Zod, HLC, UUID v7, seed-данные, event_data (переключения/заземления), журналы, смены, сокращения |
-| `db/migrations` | `0001` … `0016_journal_seq_gaps_policy`, 34 таблицы (текущее дерево; приёмочный срез t15 — 0014) |
-| `db/seed` | 3 пользователя, 2 журнала, 3 наряда, 5 записей |
+| `db/migrations` | `0001` … `0017_retention_scheduler`, 36 таблиц (текущее дерево; приёмочный срез t15 — 0014) |
+| `db/seed` | 3 пользователя, 2 журнала, 5 типов работ; демо-наряды/записи — только при `SEED_DEMO_DATA=true`, по умолчанию **выключены** |
 | `demo/` | `demo:start`, `demo:reset`, `demo:permits`, сценарий презентации |
 
 Проверено 27.11.2026 (текущее дерево после t22/t24/t25): `npm test` — **306 тестов** (28 shared, 125 API, 153 web); `npm run typecheck` — без ошибок; `npm run build` — shared + API + web (**592,21 КБ JS / 174,01 КБ gzip**, precache 11 файлов / 606,75 КиБ); миграции `0001…0017` применяются к PGlite (fresh и upgrade 0014→0016). Приёмочный срез t15: 259 тестов и 527,53 КБ / 151,77 КБ gzip, 14 миграций. QA-06 push 50 ops на PG 15: p95 **349,1 мс** при 20 VU (порог 400; t17 — 279,6; gapless-вариант t23 — 620 и отменён). Базовая линия t3 — 123 теста и 416,47 КБ / 126,67 КБ gzip (см. отчёты 24/27/28/29/30/31/32/33/34/37/39/40).

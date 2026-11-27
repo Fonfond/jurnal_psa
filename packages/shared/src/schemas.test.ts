@@ -18,7 +18,7 @@ function payload(overrides: Record<string, unknown> = {}) {
     work_type_id: SEED_UUIDS.workTypePermit,
     site_id: SEED_UUIDS.siteWorkshop,
     permit_id: SEED_UUIDS.permitActive,
-    text: 'Заменён участок трубопровода на третьем стояке',
+    text: 'Заменён автоматический выключатель в распределительном щите',
     input_method: 'manual',
     ...overrides,
   };

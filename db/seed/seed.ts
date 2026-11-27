@@ -28,6 +28,16 @@ export interface SeedSummary {
   permits: number;
 }
 
+export interface SeedOptions {
+  /**
+   * Test/demo fixtures (3 permits and 5 synthetic entries).  The local demo
+   * seed disables them by default: the operator imports real permits and
+   * creates real journal records.  Unit/integration tests keep them enabled
+   * for deterministic assertions.
+   */
+  demoData?: boolean;
+}
+
 function arrayLiteral(values: readonly string[]): string {
   return `{${values.join(',')}}`;
 }
@@ -39,7 +49,9 @@ function arrayLiteral(values: readonly string[]): string {
 export async function seedDatabase(
   client: SeedClient,
   password: string,
+  options: SeedOptions = {},
 ): Promise<SeedSummary> {
+  const demoData = options.demoData ?? true;
   const passwordHash = hashSync(password, 10);
 
   for (const [index, department] of SEED_DEPARTMENTS.entries()) {
@@ -155,8 +167,9 @@ export async function seedDatabase(
     );
   }
 
-  for (const permit of SEED_PERMITS) {
-    await client.query(
+  if (demoData) {
+    for (const permit of SEED_PERMITS) {
+      await client.query(
       `insert into permits
          (id, source_id, external_id, number, number_norm, year, type, status,
           valid_from, valid_to, site_id, work_description, responsible_user_id,
@@ -192,6 +205,7 @@ export async function seedDatabase(
       [participant.permit_id, participant.user_id, participant.role_in_permit],
     );
   }
+  }
 
   for (const version of SEED_DICTIONARY_VERSIONS) {
     await client.query(
@@ -224,8 +238,9 @@ export async function seedDatabase(
     );
   }
 
-  for (const entry of SEED_ENTRIES) {
-    await client.query(
+  if (demoData) {
+    for (const entry of SEED_ENTRIES) {
+      await client.query(
       `insert into journal_entries
          (id, author_id, performed_at, performed_tz_offset_min, performed_at_source,
           performed_at_reason_id, performed_at_comment, shift_date, work_type_id, site_id,
@@ -288,6 +303,7 @@ export async function seedDatabase(
      on conflict (entry_id, user_id) do nothing`,
     [SEED_ENTRIES[0].id, SEED_USERS[0].id],
   );
+  }
 
   const counts = await client.query<{ users: string; entries: string; permits: string }>(
     `select

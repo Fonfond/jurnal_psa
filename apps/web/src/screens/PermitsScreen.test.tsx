@@ -18,7 +18,7 @@ const permit: Permit = {
   valid_from: '2026-11-01T00:00:00.000Z',
   valid_to: '2026-12-31T23:59:59.000Z',
   site_id: '01930000-0000-7000-8000-000000000401',
-  work_description: 'Ремонт трубопровода на третьем стояке',
+  work_description: 'Ремонт электрооборудования в цехе №1',
   responsible_user_id: '01930000-0000-7000-8000-000000000102',
   external_url: 'https://permits.example.local/123',
   pdf_url: null,

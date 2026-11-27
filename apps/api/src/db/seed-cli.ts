@@ -8,12 +8,15 @@ async function main(): Promise<void> {
   const client = await createSqlClient(env);
   try {
     await runMigrations(client);
-    const summary = await seedDatabase(client, env.DEV_SEED_PASSWORD);
+    const demoData = process.env.SEED_DEMO_DATA === 'true';
+    const summary = await seedDatabase(client, env.DEV_SEED_PASSWORD, {
+      demoData,
+    });
     // F-01: mandatory after a fresh install/seed; without stats the first
     // /sync/changes can choose a seq scan and exceed the p95 threshold.
     await client.query('ANALYZE');
     console.log(
-      `Seed complete: users=${summary.users}, permits=${summary.permits}, entries=${summary.entries}; ANALYZE done`,
+      `Seed complete: users=${summary.users}, permits=${summary.permits}, entries=${summary.entries}, demo_data=${demoData}; ANALYZE done`,
     );
   } finally {
     await client.close();

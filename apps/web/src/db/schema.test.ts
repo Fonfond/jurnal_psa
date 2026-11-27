@@ -36,7 +36,7 @@ function entry(): JournalEntry {
     permit_status_at_sync: 'active',
     permit_risk_flag: false,
     permit_risk_reason: null,
-    text: 'Заменён участок трубопровода на третьем стояке',
+    text: 'Заменён автоматический выключатель в распределительном щите',
     comment: null,
     input_method: 'manual',
     asr_engine: null,
@@ -128,7 +128,7 @@ describe('Dexie schema', () => {
     });
 
     const stored = await database.entries.get(SEED_UUIDS.entry1);
-    expect(stored?.text).toContain('трубопровода');
+    expect(stored?.text).toContain('автоматический выключатель');
     expect(stored?.sync_status).toBe('pending');
 
     const pending = await database.outbox
@@ -202,7 +202,7 @@ describe('Dexie schema', () => {
     expect(database.verno).toBe(5);
     const stored = await database.entries.get(SEED_UUIDS.entry1);
     expect(stored?.journal_id).toBe(DEFAULT_JOURNAL_ID);
-    expect(stored?.text).toContain('трубопровода');
+    expect(stored?.text).toContain('автоматический выключатель');
     const review = await database.journal_reviews.get(
       '01930000-0000-7000-8000-000000000999',
     );

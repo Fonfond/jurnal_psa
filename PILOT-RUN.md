@@ -22,7 +22,7 @@ curl http://localhost:3000/v1/health
 Ожидаемо:
 
 - `logbook-pilot-db` — healthy;
-- `logbook-pilot-seed` — exited 0, в логах `0001…0017`, `Seed complete ... ANALYZE done`;
+- `logbook-pilot-seed` — exited 0, в логах `0001…0017`, `Seed complete: users=3, permits=0, entries=0, demo_data=false; ANALYZE done` (демо-наряды и записи не создаются);
 - `logbook-pilot-app` — healthy;
 - health: `{"status":"ok","db":"ok"}`.
 

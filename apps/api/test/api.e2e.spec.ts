@@ -644,7 +644,7 @@ describe('journal compliance layer', () => {
     expect(csv.headers['content-type']).toContain('text/csv');
     expect(csv.text).toContain('journal_seq,date_time,content,visas_remarks');
     expect(csv.text).toContain('TODO(OQ-04)');
-    expect(csv.text).toContain('Заменён участок');
+    expect(csv.text).toContain('Заменён автоматический выключатель');
   });
 });
 
@@ -749,7 +749,7 @@ describe('dictionaries, audit and admin', () => {
 
     const snapshot = await worker.agent.get('/v1/dictionaries/snapshot').expect(200);
     expect(snapshot.body.work_types.version).toBe(1);
-    expect(snapshot.body.work_types.items.length).toBe(3);
+    expect(snapshot.body.work_types.items.length).toBe(5);
 
     await admin.agent
       .patch('/v1/admin/dictionaries/work_types')
@@ -758,7 +758,7 @@ describe('dictionaries, audit and admin', () => {
         items: [
           {
             id: '01930000-0000-7000-8000-000000000302',
-            name: 'Осмотр территории (обновлено)',
+            name: 'Работы по распоряжению (обновлено)',
           },
         ],
       })
