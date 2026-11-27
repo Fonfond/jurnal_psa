@@ -111,6 +111,14 @@ docker compose -f docker-compose.pilot.yml down
 docker compose -f docker-compose.pilot.yml down -v
 ```
 
+Если телефон не открывает LAN-адрес, разрешите порты в Windows Firewall (PowerShell от администратора):
+
+```powershell
+New-NetFirewallRule -DisplayName "Logbook pilot" -Direction Inbound -Protocol TCP -LocalPort 3000,3443 -Action Allow
+```
+
+Проверьте, что телефон в той же сети (не в гостевом Wi-Fi/VPN) и что `Get-NetTCPConnection -LocalPort 3000` показывает `0.0.0.0`.
+
 ## 6. Критерии успеха
 
 - [ ] health 200, `db=ok`
