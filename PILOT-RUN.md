@@ -57,7 +57,7 @@ HTTP-сценарий **не даёт** service worker/PWA/офлайн — дл
 
 Подготовлен nginx `https://192.168.31.87:3443/` с mkcert-сертификатом (localhost, 127.0.0.1, 192.168.31.87).
 
-Сертификаты не коммитятся. Если каталога `deploy/https` нет:
+Сертификаты не коммитятся. Если `mkcert` не установлен: `winget install --id FiloSottile.mkcert` (или бинарник с github.com/FiloSottile/mkcert/releases). Если каталога `deploy/https` нет:
 
 ```powershell
 mkcert -cert-file deploy/https/pilot.crt -key-file deploy/https/pilot.key localhost 127.0.0.1 192.168.31.87
