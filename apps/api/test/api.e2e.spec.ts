@@ -794,6 +794,7 @@ describe('dictionaries, audit and admin', () => {
         full_name: 'Новый Сотрудник',
         role: 'worker',
         department_id: '01930000-0000-7000-8000-000000000001',
+        password: 'DemoPass!2026',
       })
       .expect(201);
     expect(created.body.id).toEqual(expect.any(String));

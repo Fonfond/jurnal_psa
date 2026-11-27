@@ -1,4 +1,5 @@
-﻿import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { hashSync } from 'bcryptjs';
 import { DomainError, uuidv7, type Role, type UserStatus } from '@logbook/shared';
 import { AuditService } from '../audit/audit.service';
 import type { AuthUser, RequestMeta } from '../common/types';
@@ -12,6 +13,8 @@ export interface CreateUserInput {
   department_id: string;
   position?: string;
   external_id?: string;
+  /** Local demo credential; never accepted by the OIDC production provider. */
+  password: string;
 }
 
 export interface PatchUserInput {
@@ -86,6 +89,12 @@ export class AdminService {
           input.department_id,
           input.position ?? null,
         ],
+      );
+
+      await tx.query(
+        `insert into user_credentials (user_id, password_hash)
+         values ($1, $2)`,
+        [id, hashSync(input.password, 10)],
       );
 
       await this.audit.record(tx, {

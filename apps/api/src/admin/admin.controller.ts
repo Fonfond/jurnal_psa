@@ -1,4 +1,4 @@
-﻿import {
+import {
   Body,
   Controller,
   Get,
@@ -25,6 +25,8 @@ const createUserSchema = z.object({
   department_id: uuidSchema,
   position: z.string().max(120).optional(),
   external_id: z.string().max(64).optional(),
+  /** Local demo password; hashed into user_credentials, never stored in clear. */
+  password: z.string().min(8).max(128),
 });
 
 const patchUserSchema = z.object({

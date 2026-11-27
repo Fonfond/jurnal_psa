@@ -81,6 +81,10 @@ describe('AdminUsersScreen', () => {
     await userEvent.click(screen.getByRole('button', { name: '+ Пользователь' }));
     await userEvent.type(screen.getByRole('textbox', { name: 'Email *' }), 'new@logbook.local');
     await userEvent.type(screen.getByRole('textbox', { name: 'ФИО *' }), 'Новый Сотрудник');
+    await userEvent.type(
+      screen.getByLabelText(/Пароль для входа/),
+      'DemoPass!2026',
+    );
     await userEvent.selectOptions(
       screen.getByRole('combobox', { name: 'Подразделение *' }),
       departments[0]!.id,
@@ -94,6 +98,7 @@ describe('AdminUsersScreen', () => {
           full_name: 'Новый Сотрудник',
           role: 'worker',
           department_id: departments[0]!.id,
+          password: 'DemoPass!2026',
         }),
       ),
     );

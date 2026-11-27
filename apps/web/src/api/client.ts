@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   AuthConfigResponse,
   Journal,
   ConflictRecord,
@@ -430,6 +430,7 @@ export const api = {
     role: string;
     department_id: string;
     position?: string;
+    password: string;
   }): Promise<AdminUser> {
     return request<AdminUser>('/admin/users', {
       method: 'POST',

@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../api/client';
 import type { AdminDepartment, AdminUser } from '../../api/types';
 import { Badge } from '../../components/Badge';
@@ -26,6 +26,7 @@ const EMPTY_FORM = {
   role: 'worker',
   department_id: '',
   position: '',
+  password: '',
 };
 
 /** Admin users directory: filters, creation, role/status changes, sessions. */
@@ -88,6 +89,10 @@ export function AdminUsersScreen(): JSX.Element {
       setError('Заполните email, ФИО и подразделение');
       return;
     }
+    if (form.password.length < 8) {
+      setError('Пароль должен быть не короче 8 символов');
+      return;
+    }
     await run(async () => {
       await api.adminCreateUser({
         email: form.email,
@@ -95,6 +100,7 @@ export function AdminUsersScreen(): JSX.Element {
         role: form.role,
         department_id: form.department_id,
         position: form.position || undefined,
+        password: form.password,
       });
       setForm({ ...EMPTY_FORM });
       setShowCreate(false);
@@ -204,6 +210,20 @@ export function AdminUsersScreen(): JSX.Element {
                 value={form.position}
                 onChange={(event) => setForm({ ...form, position: event.target.value })}
               />
+            </label>
+            <label className="field">
+              <span>Пароль для входа *</span>
+              <input
+                type="password"
+                autoComplete="new-password"
+                minLength={8}
+                value={form.password}
+                onChange={(event) => setForm({ ...form, password: event.target.value })}
+                required
+              />
+              <span className="field__hint">
+                Локальная демо-учётка; в production — OIDC.
+              </span>
             </label>
           </div>
           <button type="submit" className="button button--primary" disabled={busy}>

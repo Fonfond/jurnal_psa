@@ -40,11 +40,12 @@ async function createContext(): Promise<TestContext> {
 
 async function login(
   email: string,
+  password: string = PASSWORD,
 ): Promise<{ agent: SuperAgentTest; csrf: string }> {
   const agent = request.agent(context.app.getHttpServer());
   const response = await agent
     .post('/v1/auth/dev-login')
-    .send({ email, password: PASSWORD })
+    .send({ email, password })
     .expect(200);
   return {
     agent: agent as unknown as SuperAgentTest,
@@ -111,10 +112,17 @@ describe('admin contour (ADR-14, ADM-01/ADM-02/ADM-04)', () => {
         role: 'worker',
         department_id: SEED_UUIDS.departmentMain,
         position: 'Электромонтёр',
+        password: 'DemoPass!2026',
       })
       .expect(201);
     const id = created.body.id as string;
     expect(id).toMatch(/^[0-9a-f-]{36}$/);
+
+    // A2: local account created by the administrator must be able to log in
+    // with the password set in the admin form (not only the seed password).
+    const createdLogin = await login(email, 'DemoPass!2026');
+    const me = await createdLogin.agent.get('/v1/me').expect(200);
+    expect(me.body.user.email).toBe(email);
 
     const patched = await admin.agent
       .patch(`/v1/admin/users/${id}`)

@@ -375,6 +375,10 @@ export function EntryEditorScreen(): JSX.Element {
     if (selectedWorkType?.requires_site && !form.site_id) {
       nextErrors.site_id = 'Укажите объект';
     }
+    if (form.late_entry && !form.performed_at_comment.trim()) {
+      nextErrors.performed_at_comment =
+        'Укажите причину поздней записи / корректировки времени';
+    }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
       return;
@@ -821,6 +825,29 @@ export function EntryEditorScreen(): JSX.Element {
               Согласен заменить серверное время
             </label>
           </div>
+        ) : null}
+
+        {form.late_entry || form.time_manual ? (
+          <label className="field">
+            <span>
+              {form.late_entry
+                ? 'Причина поздней записи / корректировки *'
+                : 'Причина ручного времени'}
+            </span>
+            <textarea
+              rows={2}
+              value={form.performed_at_comment}
+              onChange={(event) =>
+                update('performed_at_comment', event.target.value)
+              }
+              placeholder="Например: запись внесена после смены, уточнено по бумажному журналу"
+            />
+            {errors.performed_at_comment ? (
+              <span className="field__error">
+                {errors.performed_at_comment}
+              </span>
+            ) : null}
+          </label>
         ) : null}
 
         <div className="form-row">

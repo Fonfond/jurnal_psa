@@ -44,6 +44,10 @@ export function EntriesScreen(): JSX.Element {
   const [eventType, setEventType] = useState<EventFilter>(
     (searchParams.get('event_type') as EventFilter | null) ?? '',
   );
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [siteId, setSiteId] = useState('');
+  const [permitId, setPermitId] = useState('');
   const [shift, setShift] = useState<Shift | null>(null);
   const [shiftMissing, setShiftMissing] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -68,12 +72,14 @@ export function EntriesScreen(): JSX.Element {
   }, [shiftId]);
 
   const data = useLiveQuery(async () => {
-    const [entries, workTypes, journals] = await Promise.all([
+    const [entries, workTypes, journals, sites, permits] = await Promise.all([
       listLocalEntries({ search }),
       db.dict_work_types.toArray(),
       listLocalJournals(),
+      db.dict_sites.toArray(),
+      db.permits.toArray(),
     ]);
-    return { entries, workTypes, journals };
+    return { entries, workTypes, journals, sites, permits };
   }, [search]);
 
   const filtered = useMemo(() => {
@@ -83,6 +89,19 @@ export function EntriesScreen(): JSX.Element {
         return false;
       }
       if (eventType && (entry.event_type ?? 'work') !== eventType) {
+        return false;
+      }
+      if (siteId && entry.site_id !== siteId) {
+        return false;
+      }
+      if (permitId && entry.permit_id !== permitId) {
+        return false;
+      }
+      const performedDate = entry.performed_at.slice(0, 10);
+      if (fromDate && performedDate < fromDate) {
+        return false;
+      }
+      if (toDate && performedDate > toDate) {
         return false;
       }
       if (shift) {
@@ -104,7 +123,7 @@ export function EntriesScreen(): JSX.Element {
       }
       return true;
     });
-  }, [data, filter, journalId, eventType, shift]);
+  }, [data, filter, journalId, eventType, shift, siteId, permitId, fromDate, toDate]);
 
   const workTypeName = (id: string): string =>
     data?.workTypes.find((type) => type.id === id)?.name ?? 'Тип работы';
@@ -120,13 +139,24 @@ export function EntriesScreen(): JSX.Element {
   );
 
   const filtersActive = Boolean(
-    journalId || eventType || shiftId || search.trim(),
+    journalId ||
+      eventType ||
+      shiftId ||
+      search.trim() ||
+      siteId ||
+      permitId ||
+      fromDate ||
+      toDate,
   );
 
   const clearFilters = (): void => {
     setSearch('');
     setJournalId('');
     setEventType('');
+    setSiteId('');
+    setPermitId('');
+    setFromDate('');
+    setToDate('');
     setSearchParams({});
   };
 
@@ -253,6 +283,56 @@ export function EntriesScreen(): JSX.Element {
               </option>
             ))}
           </select>
+        </label>
+        <label className="field field--inline">
+          <span>Объект</span>
+          <select
+            value={siteId}
+            onChange={(event) => setSiteId(event.target.value)}
+            aria-label="Фильтр по объекту"
+          >
+            <option value="">Все объекты</option>
+            {data.sites.map((site) => (
+              <option key={site.id} value={site.id}>
+                {site.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field field--inline">
+          <span>Наряд</span>
+          <select
+            value={permitId}
+            onChange={(event) => setPermitId(event.target.value)}
+            aria-label="Фильтр по наряду"
+          >
+            <option value="">Все наряды</option>
+            {data.permits
+              .filter((permit) => !permit.is_deleted)
+              .map((permit) => (
+                <option key={permit.id} value={permit.id}>
+                  {permit.number}
+                </option>
+              ))}
+          </select>
+        </label>
+        <label className="field field--inline">
+          <span>С даты</span>
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(event) => setFromDate(event.target.value)}
+            aria-label="Фильтр с даты"
+          />
+        </label>
+        <label className="field field--inline">
+          <span>По дату</span>
+          <input
+            type="date"
+            value={toDate}
+            onChange={(event) => setToDate(event.target.value)}
+            aria-label="Фильтр по дату"
+          />
         </label>
         <label className="field field--inline">
           <span>Событие</span>
