@@ -1,0 +1,80 @@
+{
+  "generated_at": "2026-11-27T10:44:47.877Z",
+  "tree": {
+    "tests": {
+      "shared": 28,
+      "api": 125,
+      "web": 153,
+      "total": 306,
+      "exit": 0
+    },
+    "typecheck": 0,
+    "build": {
+      "js_kib": 592.21,
+      "gzip_kib": 174.01,
+      "precache_kib": 606.75
+    },
+    "audit": 0
+  },
+  "pg15": {
+    "fresh": "logbook_t31_e2e 0001–0017",
+    "upgrade": "logbook_t31_upgrade 0014→0017",
+    "migrations": 17,
+    "tables": 36,
+    "e2e_fresh": "12/12",
+    "e2e_upgrade": "12/12",
+    "duplicate_or_negative": 0
+  },
+  "load": {
+    "cold_install_run1": {
+      "read_p95": 222.5,
+      "changes_p95": 798.7,
+      "push_p95": 371.2,
+      "errors": 0,
+      "verdict": "FAIL changes"
+    },
+    "cold_install_run2": {
+      "read_p95": 359.4,
+      "changes_p95": 1479.1,
+      "push_p95": 363.2,
+      "errors": 0,
+      "verdict": "FAIL read/changes"
+    },
+    "warm_after_analyze": {
+      "read_p95": 71.7,
+      "changes_p95": 139.9,
+      "push_p95": 354,
+      "errors": 0,
+      "verdict": "PASS"
+    },
+    "prod_rate_limit": {
+      "rps": 2401.1,
+      "error_rate": 0.99192,
+      "status": "expected 429"
+    },
+    "t30_reference": {
+      "cold_no_analyze": {
+        "changes": 612.1,
+        "push": 419.1
+      },
+      "after_analyze": {
+        "changes": 139.2,
+        "push": 350.1
+      }
+    }
+  },
+  "a11y": {
+    "axe_violations": 0
+  },
+  "external": [
+    "OQ-02 real IdP/MFA",
+    "OQ-04 real KEP/UЦ",
+    "OQ-05/OQ-18 retention legal",
+    "G1 fail/G2 partial",
+    "Linux/Docker/pentest"
+  ],
+  "findings": [
+    "F-01 residual: cold fresh after seed-ANALYZE still fails changes p95 798.7/1479.1; ANALYZE after bulk/warm needed"
+  ],
+  "verdict": "FAIL / NOT PASS"
+}

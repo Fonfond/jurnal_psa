@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+coverage/
+.data/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+.vite/
+apps/web/dev-dist/
+.agent-teams/
+.tmp-*
+.write-test
+db/postgres/certs/

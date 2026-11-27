@@ -1,0 +1,41 @@
+{
+  "error": "Error: timeout waiting for entry card after save; debug={\"path\":\"/entries/new\",\"text\":\"ЭОЖ\\nLogbook\\nИванов Иван Иванович · Сотрудник\\nСинхронизировано\\nЗаблокировать\\nВыйти\\nНовая запись\\n\\nСохранение на устройстве, отправка — при подключении\\n\\nОтмена\\nЖурнал *\\nОсновной оперативный журнал\\nТип события\\nРабота\\nКоманда / распоряжение\\nПереключение\\nЗаземление (З/З, ЗН)\\nИнцидент / авария\\nДругое\\nПропущенная запись\\nТекст записи *\\n25 / 2000\\nДата и время *\\nВремя указано вручную\\nТип работ *\\n— выберите —\\nРаботы на трубопроводе\\nОсмотр территории\\nОгневые работы\\nОбъект\\n— не указан —\\nЦех №1\\nПлощадка А\\nНаряд\\n— без наряда —\\nНД-123/2026 · active\\nНД-045/2026 · closed\\nНД-777/2026 · annulled\\nНомер наряда вручную\\nКомментарий\\nРаботы с повышенным риском / наряд с риском\\n🎙 Голосовой ввод\\nРучной режим по умолчанию. ASR выключен до G1.\\nДопускаемые сокращения (подсказка)\\nСохранить запись\\n▤\\nЖурнал\\n▦\\nНаряды\\n⇄\\nСмены\\n⏚\\nЗаземления\\n✓\\nВизы\\n↻\\nСинхронизация\\n⚠\\nКонфликты\",\"errors\":[],\"values\":[[\"SELECT\",\"01930000-0000-7000-8000-000000001001\"],[\"SELECT\",\"work\"],[\"INPUT\",\"on\"],[\"TEXTAREA\",\"E2E browser 1795769755291\"],[\"INPUT\",\"2026-11-27T16:55\"],[\"INPUT\",\"on\"],[\"SELECT\",\"\"],[\"SELECT\",\"\"],[\"SELECT\",\"\"],[\"INPUT\",\"\"],[\"INPUT\",\"\"],[\"INPUT\",\"on\"]]}\n    at createEntry (file:///C:/jurnal/scripts/e2e/run.mjs:189:11)\n    at async main (file:///C:/jurnal/scripts/e2e/run.mjs:311:7)",
+  "scenarios": [
+    {
+      "name": "API health",
+      "status": "passed",
+      "details": "db=ok"
+    },
+    {
+      "name": "login page a11y smoke",
+      "status": "passed",
+      "details": "controls=2; warnings=no main landmark; no nav landmark; possible low-contrast text nodes: 1",
+      "a11y": {
+        "issues": [],
+        "warnings": [
+          "no main landmark",
+          "no nav landmark",
+          "possible low-contrast text nodes: 1"
+        ],
+        "controls": 2
+      }
+    },
+    {
+      "name": "login worker + journal",
+      "status": "passed",
+      "details": "quick dev login"
+    },
+    {
+      "name": "journal a11y smoke",
+      "status": "passed",
+      "details": "warnings=possible low-contrast text nodes: 4",
+      "a11y": {
+        "issues": [],
+        "warnings": [
+          "possible low-contrast text nodes: 4"
+        ],
+        "controls": 3
+      }
+    }
+  ]
+}

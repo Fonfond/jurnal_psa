@@ -1,0 +1,51 @@
+{
+  "started_at": "2026-11-27T10:21:41.919Z",
+  "base": "http://127.0.0.1:3110/v1",
+  "duration_ms": 60278,
+  "concurrency": 20,
+  "requests": 8140,
+  "rps": 135.04097680745878,
+  "statuses": {
+    "2xx": 8140,
+    "4xx": 0,
+    "5xx": 0,
+    "network": 0
+  },
+  "scenarios": {
+    "read": {
+      "count": 4127,
+      "p50_ms": 47.8,
+      "p95_ms": 71.8,
+      "p99_ms": 87.9,
+      "max_ms": 369.8
+    },
+    "changes": {
+      "count": 1219,
+      "p50_ms": 105.5,
+      "p95_ms": 139.2,
+      "p99_ms": 169.2,
+      "max_ms": 313.7
+    },
+    "push": {
+      "count": 2366,
+      "p50_ms": 279.3,
+      "p95_ms": 350.1,
+      "p99_ms": 2558.3,
+      "max_ms": 2805.4
+    },
+    "snapshot": {
+      "count": 428,
+      "p50_ms": 131,
+      "p95_ms": 168.4,
+      "p99_ms": 190.8,
+      "max_ms": 415.5
+    }
+  },
+  "thresholds": {
+    "read": 300,
+    "changes": 500,
+    "push": 400
+  },
+  "error_rate": 0,
+  "failures": []
+}

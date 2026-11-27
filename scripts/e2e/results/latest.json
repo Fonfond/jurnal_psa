@@ -1,0 +1,103 @@
+{
+  "generated_at": "2026-11-27T11:12:40.656Z",
+  "web_url": "http://127.0.0.1:4173",
+  "api_url": "http://127.0.0.1:3121/v1",
+  "scenarios": [
+    {
+      "name": "API health",
+      "status": "passed",
+      "details": "db=ok"
+    },
+    {
+      "name": "login page a11y smoke",
+      "status": "passed",
+      "details": "axe=true; controls=2; warnings=no main landmark; no nav landmark; possible low-contrast text nodes: 1",
+      "a11y": {
+        "issues": [],
+        "warnings": [
+          "no main landmark",
+          "no nav landmark",
+          "possible low-contrast text nodes: 1"
+        ],
+        "controls": 2,
+        "axe": []
+      }
+    },
+    {
+      "name": "login worker + journal",
+      "status": "passed",
+      "details": "quick dev login"
+    },
+    {
+      "name": "journal a11y smoke",
+      "status": "passed",
+      "details": "warnings=possible low-contrast text nodes: 1",
+      "a11y": {
+        "issues": [],
+        "warnings": [
+          "possible low-contrast text nodes: 1"
+        ],
+        "controls": 3,
+        "axe": []
+      }
+    },
+    {
+      "name": "create entry via UI",
+      "status": "passed",
+      "details": "E2E browser 1795777951653"
+    },
+    {
+      "name": "entry card a11y smoke",
+      "status": "passed",
+      "details": "warnings=possible low-contrast text nodes: 1",
+      "a11y": {
+        "issues": [],
+        "warnings": [
+          "possible low-contrast text nodes: 1"
+        ],
+        "controls": 0,
+        "axe": []
+      }
+    },
+    {
+      "name": "create entry offline",
+      "status": "passed",
+      "details": "E2E offline 1795777952476"
+    },
+    {
+      "name": "offline entry syncs after online",
+      "status": "passed",
+      "details": "sync screen"
+    },
+    {
+      "name": "admin users screen",
+      "status": "passed",
+      "details": "admin contour"
+    },
+    {
+      "name": "admin a11y smoke",
+      "status": "passed",
+      "details": "warnings=possible low-contrast text nodes: 2",
+      "a11y": {
+        "issues": [],
+        "warnings": [
+          "possible low-contrast text nodes: 2"
+        ],
+        "controls": 3,
+        "axe": []
+      }
+    },
+    {
+      "name": "PWA service worker",
+      "status": "passed",
+      "details": "{\"supported\":true,\"active\":true,\"scope\":\"http://127.0.0.1:4173/\"}"
+    },
+    {
+      "name": "no runtime exceptions",
+      "status": "passed",
+      "details": "0 exceptions"
+    }
+  ],
+  "failed": [],
+  "runtime_exceptions": []
+}

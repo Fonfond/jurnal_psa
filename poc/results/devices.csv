@@ -1,0 +1,2 @@
+"device_id","model","class","os","browser","browser_version","screen","notes"
+"D6","Windows 11 desktop (headless CI workstation)","A","Windows 11","Edge","158.0.4370.33","1920x1080","Actual PoC host; not an approved G1 device; no iOS/Android devices available"

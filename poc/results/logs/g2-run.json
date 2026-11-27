@@ -1,0 +1,24 @@
+{
+  "device": "D6",
+  "os": "Windows 11",
+  "browser": "Edge Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36 Edg/158.0.0.0",
+  "rows": 153,
+  "scenarios": [
+    "POC-G2-01",
+    "POC-G2-03",
+    "POC-G2-04",
+    "POC-G2-05",
+    "POC-G2-06",
+    "POC-G2-09",
+    "POC-G2-10",
+    "POC-G2-12",
+    "POC-G2-02",
+    "POC-G2-07",
+    "POC-G2-08",
+    "POC-G2-11"
+  ],
+  "data_loss": false,
+  "atomic_failures": 0,
+  "export_failures": 0,
+  "migration_failures": 0
+}

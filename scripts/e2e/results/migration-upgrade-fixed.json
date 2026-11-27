@@ -1,0 +1,57 @@
+{
+  "generated_at": "2026-11-27T09:33:50.869Z",
+  "fresh": {
+    "stats": {
+      "n": 7,
+      "min": "1",
+      "max": "7",
+      "negative": 0,
+      "duplicates": 0
+    },
+    "counters": [
+      {
+        "journal_key": "main",
+        "last_seq": "0",
+        "max_seq": "7"
+      },
+      {
+        "journal_key": "substation",
+        "last_seq": "0",
+        "max_seq": "0"
+      }
+    ],
+    "migrations": {
+      "n": 16,
+      "last": "0016_journal_seq_gaps_policy.sql"
+    }
+  },
+  "upgrade": {
+    "stats": {
+      "n": 7,
+      "min": "1",
+      "max": "7",
+      "negative": 0,
+      "duplicates": 0
+    },
+    "counters": [
+      {
+        "journal_key": "main",
+        "last_seq": "5",
+        "max_seq": "7"
+      },
+      {
+        "journal_key": "substation",
+        "last_seq": "0",
+        "max_seq": "0"
+      }
+    ],
+    "migrations": {
+      "n": 16,
+      "last": "0016_journal_seq_gaps_policy.sql"
+    }
+  },
+  "e2e": {
+    "fresh": "12/12 passed",
+    "upgrade": "12/12 passed"
+  }
+}

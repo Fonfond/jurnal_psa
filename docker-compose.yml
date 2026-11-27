@@ -1,0 +1,91 @@
+services:
+  postgres:
+    image: postgres:15.15-alpine
+    container_name: logbook-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: logbook
+      POSTGRES_USER: logbook
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-logbook}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+    command:
+      - postgres
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/certs/server.crt
+      - -c
+      - ssl_key_file=/certs/server.key
+      - -c
+      - ssl_min_protocol_version=TLSv1.2
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - max_connections=200
+      - -c
+      - wal_level=replica
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=10
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_command=test ! -f /archive/%f && cp %p /archive/%f
+      - -c
+      - log_min_duration_statement=250
+      - -c
+      - log_checkpoints=on
+      - -c
+      - log_lock_waits=on
+    ports:
+      - "5432:5432"
+    volumes:
+      - logbook-pgdata:/var/lib/postgresql/data
+      - ./db/postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./db/postgres/certs:/certs:ro
+      - logbook-walarchive:/archive
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logbook -d logbook -h 127.0.0.1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Streaming replica / failover target for the HA profile:
+  #   docker compose --profile ha up -d
+  postgres-replica:
+    image: postgres:15.15-alpine
+    container_name: logbook-postgres-replica
+    restart: unless-stopped
+    profiles: ["ha"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_REPLICATION_PASSWORD:-replicator}
+      PGSSLMODE: require
+    entrypoint: ["bash", "-c"]
+    command:
+      - >
+        until pg_basebackup -h postgres -p 5432 -U replicator
+        -D /var/lib/postgresql/data -X stream -R -c fast; do sleep 2; done;
+        exec postgres -c hot_standby=on -c ssl=on
+        -c ssl_cert_file=/certs/server.crt -c ssl_key_file=/certs/server.key
+        -c ssl_min_protocol_version=TLSv1.2 -c archive_mode=off
+    ports:
+      - "5433:5432"
+    volumes:
+      - logbook-replica-pgdata:/var/lib/postgresql/data
+      - ./db/postgres/certs:/certs:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logbook -d logbook -h 127.0.0.1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  logbook-pgdata:
+  logbook-replica-pgdata:
+  logbook-walarchive:

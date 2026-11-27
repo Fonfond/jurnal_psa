@@ -1,0 +1,37 @@
+{
+  "name": "logbook",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ЭОЖ Logbook — offline-first PWA (MVP)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build:shared": "npm run build --workspace @logbook/shared",
+    "build:api": "npm run build --workspace @logbook/api",
+    "build:web": "npm run build --workspace @logbook/web",
+    "build": "npm run build:shared && npm run build:api && npm run build:web",
+    "dev:api": "npm run dev --workspace @logbook/api",
+    "dev:web": "npm run dev --workspace @logbook/web",
+    "start:api": "npm run start --workspace @logbook/api",
+    "db:migrate": "npm run migrate --workspace @logbook/api",
+    "db:analyze": "npm run analyze --workspace @logbook/api",
+    "db:seed": "npm run seed --workspace @logbook/api",
+    "demo:start": "powershell -NoProfile -ExecutionPolicy Bypass -File demo/start.ps1",
+    "demo:reset": "powershell -NoProfile -ExecutionPolicy Bypass -File demo/reset.ps1",
+    "demo:permits": "node demo/import-permits.mjs",
+    "test": "npm run build:shared && npm run test --workspace @logbook/shared && npm run test --workspace @logbook/api && npm run test --workspace @logbook/web",
+    "typecheck": "npm run build:shared && npm run typecheck --workspace @logbook/shared && npm run typecheck --workspace @logbook/api && npm run typecheck --workspace @logbook/web",
+    "format": "prettier --write .",
+    "test:e2e": "node scripts/e2e/run.mjs",
+    "test:e2e:build": "npm run build && node scripts/e2e/run.mjs"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3"
+  }
+}

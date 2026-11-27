@@ -1,0 +1,9 @@
+{
+  "started_at": "2026-11-24T13:29:36.918Z",
+  "finished_at": "2026-11-24T13:29:37.138Z",
+  "rows": 560,
+  "scenarios": 24,
+  "deterministic": true,
+  "data_loss": false,
+  "failed_scenarios": []
+}

@@ -1,0 +1,99 @@
+# Local pilot stack: PostgreSQL 15 + one-shot migrate/seed + API/PWA.
+#
+# This is deliberately separate from docker-compose.yml (the production/HA
+# database profile documented in 35).  Do not treat this file as production.
+#
+# Quick start:
+#   docker compose -f docker-compose.pilot.yml up --build -d
+#   docker compose -f docker-compose.pilot.yml ps
+#   curl http://localhost:3000/v1/health
+#
+# If 3000 is busy:  APP_PORT=3100 docker compose -f docker-compose.pilot.yml up --build -d
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: logbook-pilot-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: logbook
+      POSTGRES_USER: logbook
+      POSTGRES_PASSWORD: logbook
+    ports:
+      - "${DB_PORT:-55432}:5432"
+    volumes:
+      - logbook-pilot-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logbook -d logbook -h 127.0.0.1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  # Uses the build stage on purpose: tsx/tsc are needed for migrate/seed.
+  # It is a one-shot container and never serves traffic.
+  seed:
+    build:
+      context: .
+      target: build
+    container_name: logbook-pilot-seed
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgres://logbook:logbook@db:5432/logbook
+      DATABASE_SSL_MODE: disable
+      RUN_MIGRATIONS_ON_START: "false"
+      AUTH_PROVIDER: dev
+      DEV_LOGIN_ENABLED: "true"
+      DEV_SEED_PASSWORD: ${DEV_SEED_PASSWORD:-Logbook!2026}
+      COOKIE_SECRET: ${COOKIE_SECRET:-local-pilot-only-cookie-secret-change-me-32}
+      SIGNATURE_PROVIDER: none
+    command: ["sh", "-c", "npm run db:migrate && npm run db:seed"]
+
+  app:
+    build:
+      context: .
+      target: runtime
+    container_name: logbook-pilot-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      # Local pilot only: dev login/signature are forbidden in production by
+      # env.ts fail-closed gates.  The image itself defaults to production
+      # mode; this override is explicit and documented in PILOT-RUN.md.
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgres://logbook:logbook@db:5432/logbook
+      DATABASE_SSL_MODE: disable
+      DATABASE_POOL_MAX: "10"
+      RUN_MIGRATIONS_ON_START: "false"
+      AUTH_PROVIDER: dev
+      DEV_LOGIN_ENABLED: "true"
+      DEV_SEED_PASSWORD: ${DEV_SEED_PASSWORD:-Logbook!2026}
+      COOKIE_SECRET: ${COOKIE_SECRET:-local-pilot-only-cookie-secret-change-me-32}
+      SIGNATURE_PROVIDER: none
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      RATE_LIMIT_ENABLED: "true"
+      SESSION_IDLE_MINUTES: "30"
+      RETENTION_SCHEDULER_ENABLED: "true"
+      WEB_DIST: /app/apps/web/dist
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3000/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  logbook-pilot-pgdata:

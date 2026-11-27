@@ -1,0 +1,3 @@
+external_id,number,year,type,status,valid_from,valid_to,site_code,description,responsible_login,external_url
+DEMO-001,НД-ДЕМО-001/2026,2026,permit_to_work,active,2026-11-24,2026-12-31,SITE-01,Демонстрационные работы на участке,supervisor@logbook.local,
+DEMO-002,НД-ДЕМО-002/2026,2026,permit_to_work,suspended,2026-12-01,2026-12-15,SITE-02,Демонстрационные работы на выездном объекте,supervisor@logbook.local,

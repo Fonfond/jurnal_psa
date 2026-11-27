@@ -1,0 +1,22 @@
+{
+  "database": "logbook_release_t15",
+  "migrations": 15,
+  "fresh_apply": "0015 applied",
+  "entries": {
+    "n": 63,
+    "min": "-2",
+    "max": "66"
+  },
+  "counters": [
+    {
+      "journal_id": "01930000-0000-7000-8000-000000001001",
+      "last_seq": "0"
+    },
+    {
+      "journal_id": "01930000-0000-7000-8000-000000001002",
+      "last_seq": "0"
+    }
+  ],
+  "observed": "E2E on upgraded DB: journal_seq assignment failed duplicate key value violates unique constraint journal_entries_journal_seq_uq",
+  "expected_fix": "0015 must backfill journal_counters from max(journal_seq) before enabling counter-based trigger"
+}

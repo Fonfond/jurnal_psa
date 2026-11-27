@@ -1,0 +1,23 @@
+HTTP/1.1 429 Too Many Requests
+X-Powered-By: Express
+X-Request-Id: req_6aee9641-eeee-44d2-b53d-cd951f0ffe1f
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Referrer-Policy: no-referrer
+Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=()
+Content-Security-Policy: default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+Cross-Origin-Resource-Policy: same-site
+Cross-Origin-Opener-Policy: same-origin
+X-Permitted-Cross-Domain-Policies: none
+Cache-Control: no-store
+X-RateLimit-Limit: 300
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1795775050
+Retry-After: 37
+Content-Type: application/json; charset=utf-8
+Content-Length: 173
+ETag: W/"ad-VGDjNnKSNGRZzB1amGOd5CiTlAU"
+Date: Fri, 27 Nov 2026 10:23:32 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+

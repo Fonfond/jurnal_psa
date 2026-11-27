@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PoC G1 — on-device ASR harness</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 24px; color: #0f172a; }
+      h1 { font-size: 20px; }
+      #status { padding: 12px; background: #f1f5f9; border-radius: 8px; }
+      #poc-result { white-space: pre-wrap; font-size: 11px; max-height: 0; overflow: hidden; }
+      label { display: block; margin: 12px 0; }
+      input { width: min(640px, 100%); padding: 6px; }
+      .hint { color: #475569; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <h1>PoC G1 — on-device ASR</h1>
+    <p class="hint">
+      Изолированный стенд. Модель и аудиокорпус в репозиторий не входят; для реального
+      замера укажите URL локальной модели и используйте устройства D1–D7 по плану PoC.
+    </p>
+    <label>
+      URL модели (≤ 40 МБ, локальный сервер):
+      <input id="model-url" type="url" placeholder="http://127.0.0.1:8080/model.bin" />
+    </label>
+    <div id="status">запуск…</div>
+    <pre id="poc-result"></pre>
+    <p class="hint">
+      Без модели стенд честно сообщает <code>blocked</code>, а не подставляет мок-результат.
+    </p>
+    <script src="./g1.js"></script>
+  </body>
+</html>

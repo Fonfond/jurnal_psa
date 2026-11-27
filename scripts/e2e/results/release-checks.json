@@ -1,0 +1,60 @@
+{
+  "generated_at": "2026-11-27T09:39:40.677Z",
+  "current_tree": {
+    "tests": {
+      "shared": 28,
+      "api": 117,
+      "web": 153,
+      "total": 298,
+      "exit_code": 0
+    },
+    "typecheck_exit_code": 0,
+    "build": {
+      "web_js_bytes": 592214,
+      "web_js_kib": 592.21,
+      "gzip_kib": 174.01,
+      "precache_kib": 606.75,
+      "exit_code": 0
+    },
+    "audit_prod": {
+      "vulnerabilities": 0,
+      "exit_code": 0
+    }
+  },
+  "e2e": {
+    "total": 12,
+    "failed": [],
+    "runtime_exceptions": 0,
+    "axe_violations": 0,
+    "fresh_and_upgrade": "12/12 both"
+  },
+  "a11y": {
+    "standard": "axe-core WCAG2 A/AA",
+    "violations": 0,
+    "manual_wcag": "not performed"
+  },
+  "migrations": {
+    "through": "0016_journal_seq_gaps_policy.sql",
+    "fresh": {
+      "n": 16,
+      "last": "0016_journal_seq_gaps_policy.sql"
+    },
+    "upgrade": {
+      "n": 16,
+      "last": "0016_journal_seq_gaps_policy.sql"
+    },
+    "upgrade_0014_to_0015": "fixed: counters backfilled; migration-upgrade.spec passed",
+    "duplicate_or_negative": 0
+  },
+  "platform": {
+    "docker": "available",
+    "docker_compose_config": "passed",
+    "compose_up": "blocked: host port 5432 + missing certs",
+    "nginx": "nginx 1.28.0 config test passed",
+    "wsl_linux": "absent"
+  },
+  "known_risks": [
+    "p95 push ~620ms after gapless 0015 (REP-14); 0016 sequence policy needs load confirmation",
+    "Linux/full Docker/nginx runtime and pentest external"
+  ]
+}

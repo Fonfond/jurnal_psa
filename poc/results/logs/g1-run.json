@@ -1,0 +1,78 @@
+{
+  "harness": {
+    "gate": "G1",
+    "status": "blocked",
+    "reason": "No on-device ASR model, no 2h audio corpus, no devices D1-D7. Gate cannot be measured.",
+    "device": "D6 (desktop, headless Edge) — not an approved G1 device",
+    "checks": {
+      "secure_context": true,
+      "media_devices": true,
+      "audio_context": true,
+      "web_worker": true,
+      "wasm": true,
+      "model_url": null
+    },
+    "pipeline": {
+      "audio_seconds": 120,
+      "chunks_emitted": 6,
+      "flushed_chunks": 1,
+      "chunk_size": 320000,
+      "overlap_samples": 32000
+    },
+    "scenarios": [
+      {
+        "id": "POC-G1-01",
+        "status": "blocked"
+      },
+      {
+        "id": "POC-G1-02",
+        "status": "blocked"
+      },
+      {
+        "id": "POC-G1-03",
+        "status": "blocked"
+      },
+      {
+        "id": "POC-G1-04",
+        "status": "blocked"
+      },
+      {
+        "id": "POC-G1-05",
+        "status": "blocked"
+      },
+      {
+        "id": "POC-G1-06",
+        "status": "blocked"
+      },
+      {
+        "id": "POC-G1-07",
+        "status": "blocked"
+      },
+      {
+        "id": "POC-G1-08",
+        "status": "blocked"
+      },
+      {
+        "id": "POC-G1-09",
+        "status": "blocked"
+      },
+      {
+        "id": "POC-G1-10",
+        "status": "blocked"
+      },
+      {
+        "id": "POC-G1-11",
+        "status": "blocked"
+      },
+      {
+        "id": "POC-G1-12",
+        "status": "blocked"
+      }
+    ],
+    "legalNote": "Isolated prototype; audio is never uploaded; no product code imported."
+  },
+  "edge": {
+    "exit": 0,
+    "stderr": ""
+  }
+}

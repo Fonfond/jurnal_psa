@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PoC G2 — IndexedDB harness</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 24px; color: #0f172a; }
+      h1 { font-size: 20px; }
+      #status { padding: 12px; background: #f1f5f9; border-radius: 8px; }
+      #poc-result { white-space: pre-wrap; font-size: 11px; max-height: 0; overflow: hidden; }
+      .hint { color: #475569; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <h1>PoC G2 — IndexedDB, квоты и сохранность</h1>
+    <p class="hint">
+      Изолированный стенд. Не является продуктовым UI и не импортирует код приложения.
+      Откройте страницу через локальный HTTP-сервер: <code>node poc/tools/serve.mjs</code>.
+    </p>
+    <div id="status">запуск…</div>
+    <pre id="poc-result"></pre>
+    <script src="./g2.js"></script>
+  </body>
+</html>
