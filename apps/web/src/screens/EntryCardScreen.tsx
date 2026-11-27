@@ -183,6 +183,12 @@ export function EntryCardScreen(): JSX.Element {
 
         <p className="entry-detail__text">{entry.text}</p>
 
+        {entry.performed_at_comment ? (
+          <p className="entry-detail__comment">
+            Причина корректировки: {entry.performed_at_comment}
+          </p>
+        ) : null}
+
         {entry.comment ? (
           <p className="entry-detail__comment">Комментарий: {entry.comment}</p>
         ) : null}

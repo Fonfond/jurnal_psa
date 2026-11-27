@@ -1,0 +1,74 @@
+[
+  {
+    "external_id": "DEMO-ELEC-001",
+    "number": "НД-ЭЛ-001/2026",
+    "year": 2026,
+    "type": "permit_to_work",
+    "status": "active",
+    "valid_from": "2026-11-20",
+    "valid_to": "2026-12-31",
+    "site_code": "SITE-01",
+    "description": "Работы в электроустановке: замена выключателя 10 кВ",
+    "responsible_login": "supervisor@logbook.local"
+  },
+  {
+    "external_id": "DEMO-HEIGHT-002",
+    "number": "НД-В-002/2026",
+    "year": 2026,
+    "type": "permit_to_work",
+    "status": "active",
+    "valid_from": "2026-11-22",
+    "valid_to": "2026-12-20",
+    "site_code": "SITE-02",
+    "description": "Работы на высоте с люльки: обслуживание опоры ЛЭП",
+    "responsible_login": "supervisor@logbook.local"
+  },
+  {
+    "external_id": "DEMO-LIFT-003",
+    "number": "НД-ГП-003/2026",
+    "year": 2026,
+    "type": "permit_to_work",
+    "status": "active",
+    "valid_from": "2026-11-23",
+    "valid_to": "2026-12-15",
+    "site_code": "SITE-03",
+    "description": "Грузоподъёмные работы: монтаж оборудования краном",
+    "responsible_login": "supervisor@logbook.local"
+  },
+  {
+    "external_id": "DEMO-HOT-004",
+    "number": "НД-ОГ-004/2026",
+    "year": 2026,
+    "type": "permit_to_work",
+    "status": "active",
+    "valid_from": "2026-12-01",
+    "valid_to": "2026-12-05",
+    "site_code": "SITE-01",
+    "description": "Огневые работы: сварка шины 10 кВ",
+    "responsible_login": "supervisor@logbook.local"
+  },
+  {
+    "external_id": "DEMO-ORDER-001",
+    "number": "РАСП-001/2026",
+    "year": 2026,
+    "type": "order",
+    "status": "active",
+    "valid_from": "2026-11-24",
+    "valid_to": "2026-12-31",
+    "site_code": "SITE-01",
+    "description": "Работы по распоряжению: осмотр электрооборудования",
+    "responsible_login": "supervisor@logbook.local"
+  },
+  {
+    "external_id": "DEMO-ORDER-002",
+    "number": "РАСП-002/2026",
+    "year": 2026,
+    "type": "order",
+    "status": "active",
+    "valid_from": "2026-11-24",
+    "valid_to": "2026-12-31",
+    "site_code": "SITE-02",
+    "description": "Работы по распоряжению: проверка опоры ЛЭП",
+    "responsible_login": "supervisor@logbook.local"
+  }
+]

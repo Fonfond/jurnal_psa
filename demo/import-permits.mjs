@@ -1,7 +1,15 @@
 import { readFileSync } from 'node:fs';
 
-const base = process.env.DEMO_API ?? 'http://localhost:3001/v1';
-const csv = readFileSync(new URL('./permits.csv', import.meta.url), 'utf8');
+const base = process.env.DEMO_API ?? 'http://localhost:3000/v1';
+const source = process.env.DEMO_SOURCE ?? 'csv';
+const csv =
+  source === 'csv'
+    ? readFileSync(new URL('./permits.csv', import.meta.url), 'utf8')
+    : undefined;
+const records =
+  source === 'json'
+    ? JSON.parse(readFileSync(new URL('./permits.json', import.meta.url), 'utf8'))
+    : undefined;
 
 const loginResponse = await fetch(`${base}/auth/dev-login`, {
   method: 'POST',
@@ -33,7 +41,7 @@ if (!loginResponse.ok) {
       cookie: cookies,
       'x-csrf-token': login.csrf_token,
     },
-    body: JSON.stringify({ source_id: 'demo', csv }),
+    body: JSON.stringify({ source_id: 'demo', csv, records }),
   });
   const result = await response.json();
   if (!response.ok) {

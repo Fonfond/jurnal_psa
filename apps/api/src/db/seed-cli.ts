@@ -9,8 +9,11 @@ async function main(): Promise<void> {
   try {
     await runMigrations(client);
     const demoData = process.env.SEED_DEMO_DATA === 'true';
+    const demoProfile =
+      process.env.SEED_DEMO_PROFILE === 'test' ? 'test' : 'electrical';
     const summary = await seedDatabase(client, env.DEV_SEED_PASSWORD, {
       demoData,
+      demoProfile,
     });
     // F-01: mandatory after a fresh install/seed; without stats the first
     // /sync/changes can choose a seq scan and exceed the p95 threshold.

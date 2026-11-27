@@ -1,3 +1,7 @@
 external_id,number,year,type,status,valid_from,valid_to,site_code,description,responsible_login,external_url
-DEMO-001,НД-ДЕМО-001/2026,2026,permit_to_work,active,2026-11-24,2026-12-31,SITE-01,Демонстрационные работы на участке,supervisor@logbook.local,
-DEMO-002,НД-ДЕМО-002/2026,2026,permit_to_work,suspended,2026-12-01,2026-12-15,SITE-02,Демонстрационные работы на выездном объекте,supervisor@logbook.local,
+DEMO-ELEC-001,НД-ЭЛ-001/2026,2026,permit_to_work,active,2026-11-20,2026-12-31,SITE-01,Работы в электроустановке: замена выключателя 10 кВ,supervisor@logbook.local,
+DEMO-HEIGHT-002,НД-В-002/2026,2026,permit_to_work,active,2026-11-22,2026-12-20,SITE-02,Работы на высоте с люльки: обслуживание опоры ЛЭП,supervisor@logbook.local,
+DEMO-LIFT-003,НД-ГП-003/2026,2026,permit_to_work,active,2026-11-23,2026-12-15,SITE-03,Грузоподъёмные работы: монтаж оборудования краном,supervisor@logbook.local,
+DEMO-HOT-004,НД-ОГ-004/2026,2026,permit_to_work,active,2026-12-01,2026-12-05,SITE-01,Огневые работы: сварка шины 10 кВ,supervisor@logbook.local,
+DEMO-ORDER-001,РАСП-001/2026,2026,order,active,2026-11-24,2026-12-31,SITE-01,Работы по распоряжению: осмотр электрооборудования,supervisor@logbook.local,
+DEMO-ORDER-002,РАСП-002/2026,2026,order,active,2026-11-24,2026-12-31,SITE-02,Работы по распоряжению: проверка опоры ЛЭП,supervisor@logbook.local,

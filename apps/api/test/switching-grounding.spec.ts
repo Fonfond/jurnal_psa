@@ -290,7 +290,7 @@ describe('grounding registry (JRN-06)', () => {
       tool_number: 'T-1',
       applied_by: SEED_UUIDS.worker,
     });
-    expect(grounding.site_name).toBe('Площадка А');
+    expect(grounding.site_name).toBe('Опора ЛЭП №42');
 
     // A second "applied" for the same active point is a conflict, not a duplicate.
     const duplicate = await push(worker.agent, worker.csrf, [

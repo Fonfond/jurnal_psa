@@ -1,5 +1,8 @@
 import { hashSync } from 'bcryptjs';
 import {
+  DEMO_ENTRIES,
+  DEMO_PERMIT_PARTICIPANTS,
+  DEMO_PERMITS,
   SEED_DEPARTMENTS,
   SEED_DEVICES,
   SEED_DICTIONARY_VERSIONS,
@@ -36,6 +39,8 @@ export interface SeedOptions {
    * for deterministic assertions.
    */
   demoData?: boolean;
+  /** test = deterministic 3/5 fixtures; electrical = domain demo 6/9. */
+  demoProfile?: 'test' | 'electrical';
 }
 
 function arrayLiteral(values: readonly string[]): string {
@@ -52,6 +57,13 @@ export async function seedDatabase(
   options: SeedOptions = {},
 ): Promise<SeedSummary> {
   const demoData = options.demoData ?? true;
+  const demoProfile = options.demoProfile ?? 'test';
+  const permits = demoProfile === 'electrical' ? DEMO_PERMITS : SEED_PERMITS;
+  const participants =
+    demoProfile === 'electrical'
+      ? DEMO_PERMIT_PARTICIPANTS
+      : SEED_PERMIT_PARTICIPANTS;
+  const entries = demoProfile === 'electrical' ? DEMO_ENTRIES : SEED_ENTRIES;
   const passwordHash = hashSync(password, 10);
 
   for (const [index, department] of SEED_DEPARTMENTS.entries()) {
@@ -168,7 +180,7 @@ export async function seedDatabase(
   }
 
   if (demoData) {
-    for (const permit of SEED_PERMITS) {
+    for (const permit of permits) {
       await client.query(
       `insert into permits
          (id, source_id, external_id, number, number_norm, year, type, status,
@@ -197,7 +209,7 @@ export async function seedDatabase(
     );
   }
 
-  for (const participant of SEED_PERMIT_PARTICIPANTS) {
+  for (const participant of participants) {
     await client.query(
       `insert into permit_participants (permit_id, user_id, role_in_permit)
        values ($1, $2, $3)
@@ -239,7 +251,7 @@ export async function seedDatabase(
   }
 
   if (demoData) {
-    for (const entry of SEED_ENTRIES) {
+    for (const entry of entries) {
       await client.query(
       `insert into journal_entries
          (id, author_id, performed_at, performed_tz_offset_min, performed_at_source,
@@ -248,7 +260,7 @@ export async function seedDatabase(
           permit_risk_flag, permit_risk_reason, "text", comment, input_method, asr_engine,
           asr_confidence, offline_created, status, version, hlc, created_at_client,
           created_at_server, updated_at_client, updated_at_server, deleted_at, deleted_by,
-          delete_reason_id, device_id, revision_no, verified_at, verified_by)
+          delete_reason_id, device_id, revision_no, verified_at, verified_by, late_entry)
        values
          ($1, $2, $3, $4, $5::performed_source_enum,
           $6, $7, $8, $9, $10,
@@ -256,7 +268,7 @@ export async function seedDatabase(
           $15, $16, $17, $18, $19::input_method_enum, $20::asr_engine_enum,
           $21, $22, $23::entry_status_enum, 1, $24, $25,
           $26, $27, $28, $29, $30,
-          $31, $32, 0, $33, $34)
+          $31, $32, 0, $33, $34, $35)
        on conflict (id) do nothing`,
       [
         entry.id,
@@ -293,6 +305,7 @@ export async function seedDatabase(
         entry.device_id,
         entry.verified_at,
         entry.verified_by,
+        (entry as { late_entry?: boolean }).late_entry ?? false,
       ],
     );
   }
@@ -301,7 +314,7 @@ export async function seedDatabase(
     `insert into entry_workers (entry_id, user_id)
      values ($1, $2)
      on conflict (entry_id, user_id) do nothing`,
-    [SEED_ENTRIES[0].id, SEED_USERS[0].id],
+    [entries[0].id, SEED_USERS[0].id],
   );
   }
 
@@ -318,3 +331,4 @@ export async function seedDatabase(
     permits: Number(row?.permits ?? 0),
   };
 }
+

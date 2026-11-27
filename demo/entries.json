@@ -1,0 +1,87 @@
+[
+  {
+    "id": "01930000-0000-7000-8000-000000000801",
+    "author": "worker@logbook.local",
+    "work_type": "ELEC",
+    "permit": "DEMO-ELEC-001",
+    "performed_at": "2026-11-21T18:30:00.000Z",
+    "late_entry": true,
+    "performed_at_comment": "Запись внесена после смены, уточнено по бумажному журналу",
+    "text": "Заменён выключатель 10 кВ в ячейке №5, изоляция проверена"
+  },
+  {
+    "id": "01930000-0000-7000-8000-000000000802",
+    "author": "worker@logbook.local",
+    "work_type": "HEIGHT",
+    "permit": "DEMO-HEIGHT-002",
+    "performed_at": "2026-11-24T09:15:00.000Z",
+    "late_entry": false,
+    "text": "Осмотр опоры ЛЭП №42 с люльки, замечаний нет"
+  },
+  {
+    "id": "01930000-0000-7000-8000-000000000803",
+    "author": "supervisor@logbook.local",
+    "work_type": "LIFT",
+    "permit": "DEMO-LIFT-003",
+    "performed_at": "2026-11-24T11:00:00.000Z",
+    "late_entry": false,
+    "text": "Монтаж оборудования краном на складе ГПМ, груз закреплён"
+  },
+  {
+    "id": "01930000-0000-7000-8000-000000000804",
+    "author": "worker@logbook.local",
+    "work_type": "HOT",
+    "permit": "DEMO-HOT-004",
+    "performed_at": "2026-11-10T10:00:00.000Z",
+    "late_entry": false,
+    "permit_risk": "Работа до начала срока действия наряда",
+    "text": "Сварочные работы на шине 10 кВ"
+  },
+  {
+    "id": "01930000-0000-7000-8000-000000000805",
+    "author": "worker@logbook.local",
+    "work_type": "ORDER",
+    "permit": "DEMO-ORDER-001",
+    "performed_at": "2026-11-25T08:40:00.000Z",
+    "late_entry": true,
+    "performed_at_comment": "Запись внесена после смены, уточнено по бумажному журналу",
+    "text": "Осмотр электрооборудования по распоряжению, замечаний нет"
+  },
+  {
+    "id": "01930000-0000-7000-8000-000000000806",
+    "author": "supervisor@logbook.local",
+    "work_type": "ORDER",
+    "permit": "DEMO-ORDER-002",
+    "performed_at": "2026-11-25T12:10:00.000Z",
+    "late_entry": false,
+    "text": "Проверка состояния опоры ЛЭП по распоряжению"
+  },
+  {
+    "id": "01930000-0000-7000-8000-000000000807",
+    "author": "worker@logbook.local",
+    "work_type": "ELEC",
+    "permit": "DEMO-ELEC-001",
+    "performed_at": "2026-11-22T19:20:00.000Z",
+    "late_entry": true,
+    "performed_at_comment": "Запись восстановлена при разборе аварии",
+    "text": "Проверено качество изоляции после ремонта"
+  },
+  {
+    "id": "01930000-0000-7000-8000-000000000808",
+    "author": "worker@logbook.local",
+    "work_type": "HEIGHT",
+    "permit": "DEMO-HEIGHT-002",
+    "performed_at": "2026-11-24T13:30:00.000Z",
+    "late_entry": false,
+    "text": "Работы с люльки: крепление кабеля на опоре"
+  },
+  {
+    "id": "01930000-0000-7000-8000-000000000809",
+    "author": "worker@logbook.local",
+    "work_type": "LIFT",
+    "permit": "DEMO-LIFT-003",
+    "performed_at": "2026-11-24T15:00:00.000Z",
+    "late_entry": false,
+    "text": "Подъём груза краном, строповка проверена"
+  }
+]

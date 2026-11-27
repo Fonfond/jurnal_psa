@@ -48,7 +48,8 @@ services:
       AUTH_PROVIDER: dev
       DEV_LOGIN_ENABLED: "true"
       DEV_SEED_PASSWORD: ${DEV_SEED_PASSWORD:-Logbook!2026}
-      SEED_DEMO_DATA: "false"
+      SEED_DEMO_DATA: "true"
+      SEED_DEMO_PROFILE: "electrical"
       COOKIE_SECRET: ${COOKIE_SECRET:-local-pilot-only-cookie-secret-change-me-32}
       SIGNATURE_PROVIDER: none
     command: ["sh", "-c", "npm run db:migrate && npm run db:seed"]

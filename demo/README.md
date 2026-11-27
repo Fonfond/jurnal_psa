@@ -51,7 +51,7 @@ npm run dev:web     # http://localhost:5173
 
 ## 4. Сценарий на 7–10 минут
 
-1. **Вход сотрудником** → «Сотрудник». В ленте 3 активные seed-записи.
+1. **Вход сотрудником** → «Сотрудник». В ленте 9 демо-записей по 6 нарядам/распоряжениям (ELEC/HEIGHT/LIFT/HOT + 2 ORDER).
 2. **Офлайн-запись**:
    - DevTools → Network → Offline;
    - «+ Запись» → заполнить текст, тип работ, объект;
@@ -65,8 +65,8 @@ npm run dev:web     # http://localhost:5173
    - снова войти сотрудником;
    - открыть проверенную запись → «Изменить» → сохранить;
    - перейти в «Конфликты»; появится запись для разбора.
-6. **Наряды**: открыть «Наряды» — 3 seed-наряда. PDF отключён (`TODO(OQ-03)`).
-7. **Админ**: войти администратором → «Синхронизация» / аудит; импорт CSV можно показать через `demo/import-permits.ps1`.
+6. **Наряды**: открыть «Наряды» — 6 демо-нарядов/распоряжений; PDF наряда открывается по signed URL.
+7. **Админ**: войти администратором → «Синхронизация» / аудит; импорт CSV через `demo/import-permits.mjs`.
 
 ## 5. Импорт демонстрационных нарядов
 
@@ -76,7 +76,11 @@ npm run dev:web     # http://localhost:5173
 npm run demo:permits
 ```
 
-Скрипт `demo/import-permits.mjs` входит администратором, берёт `demo/permits.csv` и вызывает `POST /v1/admin/permits/import`. Повторный запуск идемпотентен по `(source_id, external_id)`.
+Скрипт `demo/import-permits.mjs` входит администратором, берёт `demo/permits.csv` (или `demo/permits.json` при `DEMO_SOURCE=json`) и вызывает `POST /v1/admin/permits/import` через `PermitSourceAdapter`. Повторный запуск идемпотентен по `(source_id, external_id)`.
+
+```powershell
+$env:DEMO_SOURCE='json'; npm run demo:permits
+```
 
 ## 6. Сброс
 
@@ -88,10 +92,10 @@ npm run demo:reset
 
 ## 7. Ограничения демо
 
-- PGlite, не production PostgreSQL;
+- PGlite/локальный Docker, не production PostgreSQL;
 - dev-аутентификация, не OIDC (`TODO(OQ-02)`);
-- ASR выключен (`TODO(G1)`);
-- PDF наряда — `501` (`TODO(OQ-03)`);
-- нет реальных ПДн, нарядов и голосовых записей.
+- ASR выключен (`TODO(G1)`); Web Speech не реализован;
+- PDF наряда работает локально; юридическая ЭП не заявляется;
+- демо-данные доменные (6/9), не старые тестовые заглушки.
 
 Полный статус — `21_Отчёт_Шаг5.md`.
