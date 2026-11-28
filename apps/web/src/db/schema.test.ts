@@ -30,6 +30,8 @@ function entry(): JournalEntry {
     shift_date: null,
     work_type_id: SEED_UUIDS.workTypePermit,
     site_id: SEED_UUIDS.siteWorkshop,
+    site_name_raw: null,
+    site_binding_status: 'linked',
     permit_id: SEED_UUIDS.permitActive,
     permit_number_raw: null,
     permit_binding_status: 'linked',

@@ -10,6 +10,7 @@ import {
   AdminExportsScreen,
   AdminImportsScreen,
   AdminJournalsScreen,
+  AdminSitesScreen,
   AdminOverviewScreen,
   AdminRetentionScreen,
   AdminRolesScreen,
@@ -142,6 +143,7 @@ function AppContent(): JSX.Element {
           <Route path="users" element={<AdminUsersScreen />} />
           <Route path="roles" element={<AdminRolesScreen />} />
           <Route path="journals" element={<AdminJournalsScreen />} />
+          <Route path="sites" element={<AdminSitesScreen />} />
           <Route path="devices" element={<AdminDevicesScreen />} />
           <Route path="imports" element={<AdminImportsScreen />} />
           <Route path="retention" element={<AdminRetentionScreen />} />

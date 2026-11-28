@@ -843,6 +843,125 @@ describe('dictionaries, audit and admin', () => {
   });
 });
 
+describe('manual site name fallback', () => {
+  const rawOp = (siteName: string, entityId = uuidv7()) =>
+    entryOp({
+      entity_id: entityId,
+      payload: {
+        performed_at: '2026-11-23T11:55:00.000Z',
+        performed_tz_offset_min: 180,
+        work_type_id: SIMPLE_WORK_TYPE,
+        site_name_raw: siteName,
+        text: 'Работа на объекте, которого нет в справочнике',
+        input_method: 'manual',
+      },
+    });
+
+  it('saves an unmatched raw object and matches a normalized name on sync', async () => {
+    const worker = await login(context.app, 'worker@logbook.local');
+    const normalized = await push(context.app, worker.agent, worker.csrf, [
+      rawOp('  опора   лэп №42 '),
+    ]);
+    expect(normalized.body.results[0].status).toBe('applied');
+    expect(normalized.body.results[0].merged_entry).toMatchObject({
+      site_id: FIELD_SITE,
+      site_binding_status: 'linked',
+      site_name_raw: 'опора   лэп №42',
+    });
+
+    const unmatchedId = uuidv7();
+    const unmatched = await push(context.app, worker.agent, worker.csrf, [
+      rawOp('Временный объект №99', unmatchedId),
+    ]);
+    expect(unmatched.body.results[0].status).toBe('applied');
+    expect(unmatched.body.results[0].merged_entry).toMatchObject({
+      site_id: null,
+      site_binding_status: 'not_found',
+      site_name_raw: 'Временный объект №99',
+    });
+
+    const card = await worker.agent
+      .get(`/v1/entries/${unmatchedId}`)
+      .expect(200);
+    expect(card.body.site_name_raw).toBe('Временный объект №99');
+    expect(card.body.site_binding_status).toBe('not_found');
+  });
+
+  it('is bound manually by a supervisor and not by a worker', async () => {
+    const worker = await login(context.app, 'worker@logbook.local');
+    const entryId = uuidv7();
+    await push(context.app, worker.agent, worker.csrf, [
+      rawOp('Объект для привязки', entryId),
+    ]);
+
+    await worker.agent
+      .post('/v1/admin/sites/bind-from-raw')
+      .set(authHeaders(worker.csrf))
+      .send({ site_name_raw: 'Объект для привязки', site_id: FIELD_SITE })
+      .expect(403);
+
+    const supervisor = await login(context.app, 'supervisor@logbook.local');
+    const bound = await supervisor.agent
+      .post('/v1/admin/sites/bind-from-raw')
+      .set(authHeaders(supervisor.csrf))
+      .send({ site_name_raw: 'Объект для привязки', site_id: FIELD_SITE })
+      .expect(201);
+    expect(bound.body.updated_entries).toBe(1);
+
+    const card = await supervisor.agent
+      .get(`/v1/entries/${entryId}`)
+      .expect(200);
+    expect(card.body).toMatchObject({
+      site_id: FIELD_SITE,
+      site_binding_status: 'linked',
+      site_name_raw: 'Объект для привязки',
+    });
+  });
+
+  it('rejects a payload that sets both site_id and site_name_raw', async () => {
+    const worker = await login(context.app, 'worker@logbook.local');
+    const invalid = await push(context.app, worker.agent, worker.csrf, [
+      entryOp({
+        payload: {
+          performed_at: '2026-11-23T11:55:00.000Z',
+          performed_tz_offset_min: 180,
+          work_type_id: SIMPLE_WORK_TYPE,
+          site_id: FIELD_SITE,
+          site_name_raw: 'Дублирующий объект',
+          text: 'Проверка взаимоисключающих полей объекта',
+          input_method: 'manual',
+        },
+      }),
+    ]);
+    expect(invalid.body.results[0].status).toBe('rejected');
+    expect(invalid.body.results[0].error.code).toBe('E-VAL-01');
+  });
+
+  it('creates a Site from raw name only on an explicit admin action', async () => {    const worker = await login(context.app, 'worker@logbook.local');
+    const entryId = uuidv7();
+    await push(context.app, worker.agent, worker.csrf, [
+      rawOp('Объект из очереди', entryId),
+    ]);
+    const unresolved = await worker.agent
+      .get('/v1/admin/sites/unresolved')
+      .expect(403);
+
+    const admin = await login(context.app, 'admin@logbook.local');
+    const created = await admin.agent
+      .post('/v1/admin/sites/from-raw')
+      .set(authHeaders(admin.csrf))
+      .send({ name: 'Объект из очереди', code: 'RAW-TEST' })
+      .expect(201);
+    expect(created.body.site.name).toBe('Объект из очереди');
+    expect(created.body.updated_entries).toBe(1);
+
+    const card = await admin.agent.get(`/v1/entries/${entryId}`).expect(200);
+    expect(card.body.site_binding_status).toBe('linked');
+    expect(card.body.site_id).toBe(created.body.site.id);
+    expect(unresolved.body.error.code).toBe('E-AUTH-02');
+  });
+});
+
 describe('paper permit scan attachment', () => {
   it('uploads one PDF per entry idempotently and serves a signed URL', async () => {
     const worker = await login(context.app, 'worker@logbook.local');

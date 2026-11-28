@@ -35,6 +35,24 @@ describe('entryPayloadSchema', () => {
     expect(result.success).toBe(false);
   });
 
+  it('accepts a manual site name and rejects site_id plus site_name_raw', () => {
+    expect(
+      entryPayloadSchema.safeParse(
+        payload({ site_id: null, site_name_raw: 'Временный объект' }),
+      ).success,
+    ).toBe(true);
+    expect(
+      entryPayloadSchema.safeParse(
+        payload({ site_name_raw: 'Временный объект' }),
+      ).success,
+    ).toBe(false);
+    expect(
+      entryPayloadSchema.safeParse(
+        payload({ site_id: null, site_name_raw: 'я' }),
+      ).success,
+    ).toBe(false);
+  });
+
   it('requires asr_engine for voice input', () => {
     const result = entryPayloadSchema.safeParse(
       payload({ input_method: 'voice' }),

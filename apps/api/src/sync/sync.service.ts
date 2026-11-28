@@ -5,6 +5,7 @@ import {
   entryPayloadSchema,
   entryUpdatePayloadSchema,
   maxHlc,
+  normalizeSiteName,
   type GroundingEventData,
   type PermitStatus,
   type SyncPushOp,
@@ -290,7 +291,7 @@ export class SyncService {
       seen.add(operation.entity_id);
       const payload = contexts.get(index)!.payload;
       // Grounding and permit-linked entries have side effects/policy checks.
-      if (payload.event_type === 'grounding' || payload.permit_id) {
+      if (payload.event_type === 'grounding' || payload.permit_id || payload.site_name_raw) {
         return null;
       }
     }
@@ -338,6 +339,8 @@ export class SyncService {
         late_entry: payload.late_entry ?? false,
         journal_id: context.journal.id,
         journal_seq: context.journalSeq,
+        site_name_raw: null,
+        site_binding_status: payload.site_id ? 'linked' : 'not_required',
       };
     });
 
@@ -353,7 +356,7 @@ export class SyncService {
             asr_confidence, offline_created, status, version, hlc, field_clocks,
             created_at_client, created_at_server, updated_at_client, updated_at_server,
             device_id, revision_no, last_op_id, event_type, event_data, late_entry,
-            journal_id, journal_seq)
+            journal_id, journal_seq, site_name_raw, site_binding_status)
          select x.id, x.author_id, x.performed_at, x.performed_tz_offset_min,
                 x.performed_at_source, x.performed_at_reason_id, x.performed_at_comment,
                 x.shift_date, x.work_type_id, x.site_id, x.permit_id,
@@ -363,7 +366,8 @@ export class SyncService {
                 x.status, x.version, x.hlc, x.field_clocks, x.created_at_client,
                 x.created_at_server, x.updated_at_client, x.updated_at_server,
                 x.device_id, x.revision_no, x.last_op_id, x.event_type, x.event_data,
-                x.late_entry, x.journal_id, x.journal_seq
+                x.late_entry, x.journal_id, x.journal_seq,
+                x.site_name_raw, x.site_binding_status
            from jsonb_to_recordset($1::jsonb) as x(
                 id uuid, author_id uuid, performed_at timestamptz,
                 performed_tz_offset_min integer,
@@ -381,7 +385,8 @@ export class SyncService {
                 updated_at_server timestamptz, device_id uuid, revision_no integer,
                 last_op_id uuid, event_type journal_event_type_enum,
                 event_data jsonb, late_entry boolean, journal_id uuid,
-                journal_seq bigint)
+                journal_seq bigint, site_name_raw text,
+                site_binding_status binding_status_enum)
          returning *`,
         [JSON.stringify(records)],
       );
@@ -1022,6 +1027,37 @@ export class SyncService {
     }
   }
 
+  private async resolveSite(
+    tx: SqlClient,
+    payload: Record<string, unknown>,
+  ): Promise<{ siteId: string | null; status: string }> {
+    const explicit = (payload.site_id as string | null | undefined) ?? null;
+    if (explicit) {
+      payload.site_id = explicit;
+      payload.site_binding_status = 'linked';
+      return { siteId: explicit, status: 'linked' };
+    }
+    const raw =
+      typeof payload.site_name_raw === 'string'
+        ? payload.site_name_raw.trim()
+        : '';
+    if (!raw) {
+      payload.site_id = null;
+      payload.site_binding_status = 'not_required';
+      return { siteId: null, status: 'not_required' };
+    }
+    const target = normalizeSiteName(raw);
+    const sites = await tx.query<{ id: string; name: string }>(
+      'select id, name from sites where active = true',
+    );
+    const match =
+      sites.rows.find((site) => normalizeSiteName(site.name) === target) ?? null;
+    payload.site_name_raw = raw;
+    payload.site_id = match?.id ?? null;
+    payload.site_binding_status = match ? 'linked' : 'not_found';
+    return { siteId: match?.id ?? null, status: match ? 'linked' : 'not_found' };
+  }
+
   private async create(
     tx: SqlClient,
     actor: AuthUser,
@@ -1074,6 +1110,7 @@ export class SyncService {
       }
     }
 
+    await this.resolveSite(tx, payload);
     const permitStatus = await this.loadPermitStatus(tx, payload.permit_id ?? null);
     const permitAnnulled = permitStatus === 'annulled';
     if (permitAnnulled) {
@@ -1095,14 +1132,15 @@ export class SyncService {
           asr_confidence, offline_created, status, version, hlc, field_clocks,
           created_at_client, created_at_server, updated_at_client, updated_at_server,
           device_id, revision_no, last_op_id, event_type, event_data, late_entry,
-          journal_id, journal_seq)
+          journal_id, journal_seq, site_name_raw, site_binding_status)
        values
          ($1, $2, $3, $4, $5::performed_source_enum, $6, $7, $8, $9, $10,
           $11, $12, $13::binding_status_enum, $14::permit_status_enum,
           $15, $16, $17, $18, $19::input_method_enum, $20::asr_engine_enum,
           $21, $22, 'active'::entry_status_enum, 1, $23, $24::jsonb,
           $25, $26, $27, $26, $28, 0, $29,
-          $30::journal_event_type_enum, $31::jsonb, $32, $33::uuid, $34)
+          $30::journal_event_type_enum, $31::jsonb, $32, $33::uuid, $34,
+          $35, $36::binding_status_enum)
        returning *`,
       [
         operation.entity_id,
@@ -1140,6 +1178,8 @@ export class SyncService {
         payload.late_entry ?? false,
         journal.id,
         prepared?.journalSeq ?? null,
+        payload.site_name_raw ?? null,
+        payload.site_binding_status ?? 'not_required',
       ],
     );
 
@@ -1344,6 +1384,26 @@ export class SyncService {
         ]),
       ),
     } as MergeableEntry;
+    const siteResolution = await this.resolveSite(
+      tx,
+      candidate as Record<string, unknown>,
+    );
+    if (candidate.site_id !== siteResolution.siteId) {
+      decision.applied.site_id = {
+        before: entry.site_id ?? null,
+        after: siteResolution.siteId,
+      };
+      decision.fieldClocks.site_id = operation.hlc;
+      candidate.site_id = siteResolution.siteId;
+    }
+    if (candidate.site_binding_status !== siteResolution.status) {
+      decision.applied.site_binding_status = {
+        before: entry.site_binding_status ?? null,
+        after: siteResolution.status,
+      };
+      decision.fieldClocks.site_binding_status = operation.hlc;
+      candidate.site_binding_status = siteResolution.status;
+    }
     const invalid = validateMergedEntry(candidate);
     if (invalid.length > 0) {
       const normalConflicts = decision.conflicts.filter(

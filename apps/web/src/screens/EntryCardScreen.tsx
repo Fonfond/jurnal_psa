@@ -54,6 +54,7 @@ export function EntryCardScreen(): JSX.Element {
   const [signatures, setSignatures] = useState<SignatureRecord[]>([]);
   const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
   const [localAttachmentUrl, setLocalAttachmentUrl] = useState<string | null>(null);
+  const [bindSiteId, setBindSiteId] = useState('');
 
   const data = useLiveQuery(async () => {
     if (!id) return null;
@@ -61,6 +62,10 @@ export function EntryCardScreen(): JSX.Element {
     const permit = entryData.entry?.permit_id
       ? await db.permits.get(entryData.entry.permit_id)
       : null;
+    const site = entryData.entry?.site_id
+      ? await db.dict_sites.get(entryData.entry.site_id)
+      : null;
+    const sites = await db.dict_sites.toArray();
     let shift: Shift | null = null;
     if (entryData.entry) {
       const entry = entryData.entry;
@@ -76,7 +81,7 @@ export function EntryCardScreen(): JSX.Element {
         ) ?? null;
     }
     const attachments = await listLocalAttachments(id);
-    return { ...entryData, permit, shift, attachments };
+    return { ...entryData, permit, site, sites, shift, attachments };
   }, [id]);
 
   useEffect(() => {
@@ -147,6 +152,19 @@ export function EntryCardScreen(): JSX.Element {
       setLocalAttachmentUrl(null);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Не удалось удалить скан');
+    }
+  };
+
+  const bindSite = async (): Promise<void> => {
+    if (!id || !data?.entry?.site_name_raw || !bindSiteId) return;
+    setError(null);
+    try {
+      await api.bindSiteFromRaw(data.entry.site_name_raw, bindSiteId);
+      const updated = await api.entry(id);
+      await applyServerEntry(updated);
+      setBindSiteId('');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Не удалось привязать объект');
     }
   };
 
@@ -226,6 +244,10 @@ export function EntryCardScreen(): JSX.Element {
           </Badge>
           {entry.verified_at ? <Badge tone="success">Проверена</Badge> : null}
           {entry.permit_risk_flag ? <Badge tone="danger">Риск</Badge> : null}
+          {entry.site_binding_status === 'unresolved' ||
+          entry.site_binding_status === 'not_found' ? (
+            <Badge tone="warning">Объект не в справочнике</Badge>
+          ) : null}
           {entry.status === 'deleted' ? <Badge tone="warning">Удалена</Badge> : null}
           {entry.late_entry ? (
             <Badge tone="warning">Пропущенная запись</Badge>
@@ -278,6 +300,19 @@ export function EntryCardScreen(): JSX.Element {
 
         <dl className="detail-grid">
           <div>
+            <dt>Объект</dt>
+            <dd>
+              {data.site ? (
+                data.site.name
+              ) : (
+                entry.site_name_raw ?? '—'
+              )}
+              {entry.site_name_raw ? (
+                <div className="hint">Введено вручную: {entry.site_name_raw}</div>
+              ) : null}
+            </dd>
+          </div>
+          <div>
             <dt>Наряд</dt>
             <dd>
               {data.permit ? (
@@ -315,6 +350,36 @@ export function EntryCardScreen(): JSX.Element {
             <dd>{entry.verified_at ? formatDateTime(entry.verified_at) : '—'}</dd>
           </div>
         </dl>
+
+        {privileged &&
+        entry.site_name_raw &&
+        (entry.site_binding_status === 'unresolved' ||
+          entry.site_binding_status === 'not_found') ? (
+          <div className="field-inline bind-site">
+            <select
+              value={bindSiteId}
+              onChange={(event) => setBindSiteId(event.target.value)}
+              aria-label="Привязать объект к справочнику"
+            >
+              <option value="">— выберите объект —</option>
+              {data.sites
+                .filter((site) => site.active)
+                .map((site) => (
+                  <option key={site.id} value={site.id}>
+                    {site.name}
+                  </option>
+                ))}
+            </select>
+            <button
+              type="button"
+              className="button button--ghost"
+              disabled={!bindSiteId}
+              onClick={() => void bindSite()}
+            >
+              Привязать к справочнику
+            </button>
+          </div>
+        ) : null}
 
         {entry.permit_risk_flag && entry.permit_risk_reason ? (
           <div className="alert alert--warning">

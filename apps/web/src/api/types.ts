@@ -303,6 +303,20 @@ export interface SnapshotResponse {
   journals?: DictSection<Journal>;
 }
 
+export interface UnresolvedSiteRaw {
+  site_name_raw: string;
+  normalized_name: string;
+  count: number;
+}
+
+export interface UnresolvedSitesResponse {
+  items: UnresolvedSiteRaw[];
+}
+
+export interface BindSiteResult {
+  updated_entries: number;
+}
+
 export interface JournalsResponse {
   items: Journal[];
 }

@@ -321,6 +321,8 @@ export interface JournalEntry {
   shift_date: string | null;
   work_type_id: UUID;
   site_id: UUID | null;
+  site_name_raw: string | null;
+  site_binding_status: SiteBindingStatus;
   permit_id: UUID | null;
   permit_number_raw: string | null;
   permit_binding_status: PermitBindingStatus;
@@ -433,6 +435,11 @@ export interface ShiftActionInput {
 }
 
 export type AttachmentKind = 'permit_scan';
+export type SiteBindingStatus =
+  | 'linked'
+  | 'unresolved'
+  | 'not_found'
+  | 'not_required';
 export type AttachmentStatus = 'local' | 'uploading' | 'uploaded' | 'error';
 
 /**

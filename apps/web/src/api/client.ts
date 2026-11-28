@@ -33,6 +33,8 @@ import type {
   ArchiveRow,
   AttachmentSignedUrlResponse,
   AttachmentsResponse,
+  BindSiteResult,
+  UnresolvedSitesResponse,
   AuditEventRow,
   AuditVerifyResult,
   BackupManifest,
@@ -295,6 +297,31 @@ export const api = {
 
   snapshot(): Promise<SnapshotResponse> {
     return request<SnapshotResponse>('/dictionaries/snapshot');
+  },
+
+  unresolvedSites(): Promise<UnresolvedSitesResponse> {
+    return request<UnresolvedSitesResponse>('/admin/sites/unresolved');
+  },
+
+  createSiteFromRaw(name: string, code?: string): Promise<{ site: unknown; updated_entries: number }> {
+    return request('/admin/sites/from-raw', {
+      method: 'POST',
+      body: JSON.stringify({ name, code }),
+    });
+  },
+
+  bindSiteFromRaw(raw: string, siteId: string): Promise<BindSiteResult> {
+    return request<BindSiteResult>('/admin/sites/bind-from-raw', {
+      method: 'POST',
+      body: JSON.stringify({ site_name_raw: raw, site_id: siteId }),
+    });
+  },
+
+  ignoreSiteRaw(raw: string): Promise<{ ok: true }> {
+    return request<{ ok: true }>('/admin/sites/ignore-raw', {
+      method: 'POST',
+      body: JSON.stringify({ site_name_raw: raw }),
+    });
   },
 
   permits(params: { limit?: number; status?: string } = {}): Promise<PermitsResponse> {

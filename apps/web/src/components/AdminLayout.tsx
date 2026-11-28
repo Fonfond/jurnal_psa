@@ -7,6 +7,7 @@ const NAV = [
   { to: '/admin/users', label: 'Пользователи' },
   { to: '/admin/roles', label: 'Роли' },
   { to: '/admin/journals', label: 'Журналы' },
+  { to: '/admin/sites', label: 'Объекты' },
   { to: '/admin/devices', label: 'Устройства' },
   { to: '/admin/imports', label: 'Импорт нарядов' },
   { to: '/admin/retention', label: 'Хранение' },

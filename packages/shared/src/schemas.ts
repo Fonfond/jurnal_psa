@@ -217,6 +217,8 @@ const entryFieldsSchema = z.object({
   shift_date: dateOnlySchema.nullish(),
   work_type_id: uuidSchema,
   site_id: uuidSchema.nullish(),
+  site_name_raw: z.string().trim().min(2).max(120).nullish(),
+  site_binding_status: bindingStatusSchema.optional(),
   permit_id: uuidSchema.nullish(),
   permit_number_raw: z.string().min(3).max(32).nullish(),
   permit_binding_status: bindingStatusSchema.optional(),
@@ -271,6 +273,13 @@ export const entryPayloadSchema = entryFieldsSchema
         code: z.ZodIssueCode.custom,
         path: ['permit_number_raw'],
         message: 'Укажите либо permit_id, либо permit_number_raw',
+      });
+    }
+    if (value.site_id && value.site_name_raw) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['site_name_raw'],
+        message: 'Укажите либо site_id, либо site_name_raw',
       });
     }
     if (value.event_type && value.event_data) {

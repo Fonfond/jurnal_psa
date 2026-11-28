@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import {
   DEFAULT_JOURNAL_ID,
   entryPayloadSchema,
+  normalizeSiteName,
   type EntryPayload,
   type JournalEventType,
 } from '@logbook/shared';
@@ -70,6 +71,7 @@ interface FormState {
   performed_at_comment: string;
   work_type_id: string;
   site_id: string;
+  site_name_raw: string;
   permit_id: string;
   permit_number_raw: string;
   text: string;
@@ -91,6 +93,7 @@ const EMPTY: FormState = {
   performed_at_comment: '',
   work_type_id: '',
   site_id: '',
+  site_name_raw: '',
   permit_id: '',
   permit_number_raw: '',
   text: '',
@@ -133,6 +136,7 @@ export function EntryEditorScreen(): JSX.Element {
   const [scanPayload, setScanPayload] = useState<ScanPayload | null>(null);
   const [scanBusy, setScanBusy] = useState(false);
   const [scanExisting, setScanExisting] = useState<AttachmentRow | undefined>();
+  const [siteManual, setSiteManual] = useState(false);
   const scanReady = useCallback(
     (payload: ScanPayload | null) => setScanPayload(payload),
     [],
@@ -211,6 +215,7 @@ export function EntryEditorScreen(): JSX.Element {
         performed_at_comment: entry.performed_at_comment ?? '',
         work_type_id: entry.work_type_id,
         site_id: entry.site_id ?? '',
+        site_name_raw: entry.site_id ? '' : (entry.site_name_raw ?? ''),
         permit_id: '',
         permit_number_raw:
           entry.permit_number_raw ??
@@ -227,6 +232,7 @@ export function EntryEditorScreen(): JSX.Element {
         switching_checks: checks,
         late_entry: Boolean(entry.late_entry),
       });
+      setSiteManual(!entry.site_id && Boolean(entry.site_name_raw));
       return;
     }
 
@@ -242,6 +248,8 @@ export function EntryEditorScreen(): JSX.Element {
       work_type_id: firstWorkType?.id ?? '',
       ...(draft ?? {}),
     });
+    const draftSite = draft as Partial<FormState> | null;
+    setSiteManual(Boolean(draftSite?.site_name_raw && !draftSite?.site_id));
   }, [data, requestedJournalId]);
 
   useEffect(() => {
@@ -376,6 +384,12 @@ export function EntryEditorScreen(): JSX.Element {
     performed_at_comment: form.performed_at_comment || null,
     work_type_id: form.work_type_id,
     site_id: form.site_id || null,
+    site_name_raw: form.site_id ? null : form.site_name_raw.trim() || null,
+    site_binding_status: form.site_id
+      ? 'linked'
+      : form.site_name_raw.trim()
+        ? 'unresolved'
+        : 'not_required',
     permit_id: null,
     permit_number_raw: form.permit_number_raw || null,
     permit_binding_status: form.permit_number_raw ? 'unresolved' : 'not_required',
@@ -413,8 +427,8 @@ export function EntryEditorScreen(): JSX.Element {
     if (selectedWorkType?.requires_permit && !form.permit_number_raw) {
       nextErrors.permit_number_raw = 'Для этого типа работ нужен номер наряда';
     }
-    if (selectedWorkType?.requires_site && !form.site_id) {
-      nextErrors.site_id = 'Укажите объект';
+    if (selectedWorkType?.requires_site && !form.site_id && !form.site_name_raw.trim()) {
+      nextErrors.site_name_raw = 'Укажите объект или введите его вручную';
     }
     if (form.late_entry && !form.performed_at_comment.trim()) {
       nextErrors.performed_at_comment =
@@ -932,27 +946,92 @@ export function EntryEditorScreen(): JSX.Element {
             ) : null}
           </label>
 
-          <label className="field">
+          <div className="field">
             <span>
               Объект {selectedWorkType?.requires_site ? '*' : ''}
             </span>
-            <select
-              value={form.site_id}
-              onChange={(event) => update('site_id', event.target.value)}
-            >
-              <option value="">— не указан —</option>
-              {data.sites
-                .filter((site) => site.active)
-                .map((site) => (
-                  <option key={site.id} value={site.id}>
-                    {site.name}
-                  </option>
-                ))}
-            </select>
+            {siteManual ? (
+              <>
+                <div className="field-inline">
+                  <input
+                    type="text"
+                    list="site-suggestions"
+                    value={form.site_name_raw}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      const match = data.sites.find(
+                        (site) =>
+                          site.active &&
+                          normalizeSiteName(site.name) === normalizeSiteName(value),
+                      );
+                      update('site_name_raw', value);
+                      update('site_id', match?.id ?? '');
+                    }}
+                    placeholder="Начните вводить или выберите из списка"
+                    maxLength={120}
+                  />
+                  <datalist id="site-suggestions">
+                    {data.sites
+                      .filter((site) => site.active)
+                      .map((site) => (
+                        <option key={site.id} value={site.name} />
+                      ))}
+                  </datalist>
+                  <button
+                    type="button"
+                    className="button button--ghost button--small"
+                    onClick={() => {
+                      setSiteManual(false);
+                      update('site_name_raw', '');
+                      update('site_id', '');
+                    }}
+                  >
+                    Из справочника
+                  </button>
+                </div>
+                <span className="hint">
+                  Можно сохранить, даже если объекта нет в справочнике.
+                </span>
+              </>
+            ) : (
+              <div className="field-inline">
+                <select
+                  value={form.site_id}
+                  onChange={(event) => {
+                    update('site_id', event.target.value);
+                    update('site_name_raw', '');
+                  }}
+                >
+                  <option value="">— не указан —</option>
+                  {data.sites
+                    .filter((site) => site.active)
+                    .map((site) => (
+                      <option key={site.id} value={site.id}>
+                        {site.name}
+                      </option>
+                    ))}
+                </select>
+                <button
+                  type="button"
+                  className="button button--ghost button--small"
+                  onClick={() => {
+                    const current = data.sites.find((site) => site.id === form.site_id);
+                    setSiteManual(true);
+                    update('site_id', '');
+                    update('site_name_raw', current?.name ?? '');
+                  }}
+                >
+                  Другой объект
+                </button>
+              </div>
+            )}
+            {errors.site_name_raw ? (
+              <span className="field__error">{errors.site_name_raw}</span>
+            ) : null}
             {errors.site_id ? (
               <span className="field__error">{errors.site_id}</span>
             ) : null}
-          </label>
+          </div>
         </div>
 
         <div className="form-row">

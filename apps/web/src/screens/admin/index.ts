@@ -2,6 +2,7 @@ export { AdminOverviewScreen } from './AdminOverviewScreen';
 export { AdminUsersScreen } from './AdminUsersScreen';
 export { AdminRolesScreen } from './AdminRolesScreen';
 export { AdminJournalsScreen } from './AdminJournalsScreen';
+export { AdminSitesScreen } from './AdminSitesScreen';
 export { AdminDevicesScreen } from './AdminDevicesScreen';
 export { AdminImportsScreen } from './AdminImportsScreen';
 export { AdminRetentionScreen } from './AdminRetentionScreen';

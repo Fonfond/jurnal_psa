@@ -251,6 +251,12 @@ export async function seedDatabase(
   }
 
   if (demoData) {
+    const siteColumns = await client.query<{ count: string }>(
+      `select count(*)::text as count from information_schema.columns
+        where table_name = 'journal_entries'
+          and column_name in ('site_name_raw', 'site_binding_status')`,
+    );
+    const hasSiteRaw = Number(siteColumns.rows[0]?.count ?? 0) === 2;
     for (const entry of entries) {
       await client.query(
       `insert into journal_entries
@@ -260,7 +266,8 @@ export async function seedDatabase(
           permit_risk_flag, permit_risk_reason, "text", comment, input_method, asr_engine,
           asr_confidence, offline_created, status, version, hlc, created_at_client,
           created_at_server, updated_at_client, updated_at_server, deleted_at, deleted_by,
-          delete_reason_id, device_id, revision_no, verified_at, verified_by, late_entry)
+          delete_reason_id, device_id, revision_no, verified_at, verified_by, late_entry
+          ${hasSiteRaw ? ', site_name_raw, site_binding_status' : ''})
        values
          ($1, $2, $3, $4, $5::performed_source_enum,
           $6, $7, $8, $9, $10,
@@ -268,7 +275,8 @@ export async function seedDatabase(
           $15, $16, $17, $18, $19::input_method_enum, $20::asr_engine_enum,
           $21, $22, $23::entry_status_enum, 1, $24, $25,
           $26, $27, $28, $29, $30,
-          $31, $32, 0, $33, $34, $35)
+          $31, $32, 0, $33, $34, $35
+          ${hasSiteRaw ? ', null, $36::binding_status_enum' : ''})
        on conflict (id) do nothing`,
       [
         entry.id,
@@ -306,6 +314,7 @@ export async function seedDatabase(
         entry.verified_at,
         entry.verified_by,
         (entry as { late_entry?: boolean }).late_entry ?? false,
+        ...(hasSiteRaw ? [entry.site_id ? 'linked' : 'not_required'] : []),
       ],
     );
   }

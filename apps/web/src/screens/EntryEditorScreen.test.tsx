@@ -108,6 +108,48 @@ describe('EntryEditorScreen structured events (JRN-05/JRN-06)', () => {
     });
   });
 
+  it('saves a manual site name without blocking on the dictionary', async () => {
+    await db.dict_work_types.put({
+      id: '01930000-0000-7000-8000-000000000303',
+      code: 'SITE_WORK',
+      name: 'Работы на объекте',
+      requires_permit: false,
+      requires_site: true,
+      default_template_id: null,
+      active: true,
+      sort_order: 0,
+    });
+    renderEditor();
+
+    await screen.findByLabelText(/Тип события/);
+    await userEvent.click(screen.getByRole('button', { name: 'Другой объект' }));
+    await userEvent.type(
+      screen.getByPlaceholderText('Начните вводить или выберите из списка'),
+      'Временный объект №99',
+    );
+    await userEvent.type(
+      screen.getByLabelText(/Текст записи/),
+      'Работа на объекте, которого нет в справочнике',
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Сохранить запись' }),
+    );
+
+    await waitFor(async () => {
+      expect(await db.outbox.count()).toBe(1);
+    });
+    const payload = (await db.outbox.toArray())[0]?.payload as {
+      site_id: string | null;
+      site_name_raw: string;
+      site_binding_status: string;
+    };
+    expect(payload).toMatchObject({
+      site_id: null,
+      site_name_raw: 'Временный объект №99',
+      site_binding_status: 'unresolved',
+    });
+  });
+
   it('saves a grounding event with the tool number', async () => {
     renderEditor();
 

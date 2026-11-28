@@ -9,6 +9,8 @@ export const MERGEABLE_FIELDS = [
   'shift_date',
   'work_type_id',
   'site_id',
+  'site_name_raw',
+  'site_binding_status',
   'permit_id',
   'permit_number_raw',
   'permit_binding_status',
@@ -198,6 +200,31 @@ export function validateMergedEntry(entry: MergeableEntry): string[] {
   }
   if (entry.permit_binding_status === 'linked' && !entry.permit_id) {
     errors.push('linked_permit_requires_permit_id');
+  }
+  if (entry.site_binding_status === 'linked' && !entry.site_id) {
+    errors.push('linked_site_requires_site_id');
+  }
+  if (
+    (entry.site_binding_status === 'unresolved' ||
+      entry.site_binding_status === 'not_found') &&
+    !entry.site_name_raw
+  ) {
+    errors.push('unresolved_site_requires_name_raw');
+  }
+  if (
+    entry.site_id &&
+    entry.site_name_raw &&
+    entry.site_binding_status !== 'linked'
+  ) {
+    errors.push('site_id_and_name_raw_are_exclusive');
+  }
+  if (
+    typeof entry.site_name_raw === 'string' &&
+    entry.site_name_raw.trim().length > 0 &&
+    (entry.site_name_raw.trim().length < 2 ||
+      entry.site_name_raw.trim().length > 120)
+  ) {
+    errors.push('site_name_raw_length');
   }
   const offset = Number(entry.performed_tz_offset_min);
   if (!Number.isInteger(offset) || offset < -840 || offset > 840) {

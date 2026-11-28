@@ -26,7 +26,7 @@ docker compose -f docker-compose.pilot.yml ps
 curl http://localhost:3000/v1/health
 ```
 
-`seed`-контейнер сам применяет миграции `0001…0019`, выполняет seed и `ANALYZE`; для демо загружаются **6 нарядов/распоряжений и 9 записей** (`SEED_DEMO_DATA=true`, `SEED_DEMO_PROFILE=electrical`). После него стартует API и статика PWA. Если порт 3000 занят:
+`seed`-контейнер сам применяет миграции `0001…0020`, выполняет seed и `ANALYZE`; для демо загружаются **6 нарядов/распоряжений и 9 записей** (`SEED_DEMO_DATA=true`, `SEED_DEMO_PROFILE=electrical`). После него стартует API и статика PWA. Если порт 3000 занят:
 
 ```powershell
 $env:APP_PORT=3100; docker compose -f docker-compose.pilot.yml up --build -d
@@ -116,6 +116,7 @@ docker compose -f docker-compose.pilot.yml down -v   # удалить БД пи�
 | 44 | [Демо-пилот: постановка](44_Демо-пилот_постановка.md) | A1–A13, S1–S7, B1–B8, C1–C7, D1–D4; демо, не замена бумаги | Демо-пилот |
 | 45 | [Сценарий демо S1–S7 и чек-лист](45_Сценарий_демо.md) | Тайминг 60/30 мин, роли worker/supervisor/admin, точные действия, ожидаемые результаты, чек-лист заказчика по доменным данным 6/9 | Демо-сценарий; production-статус не меняется |
 | 46 | [Gap-audit: скан бумажного наряда](46_Gap_audit_Attachments.md) | Attachment v1.1, offline camera/PDF, object volume, signed URL, S-03/S-05 | Реализовано (демо) |
+| 47 | [Диагностика: объект вне справочника](47_Диагностика_Объект.md) | Причина B: нет поиска/ручного ввода; `site_name_raw`, очередь unresolved, привязка | Реализовано (демо) |
 | — | [PILOT-LOG — скан на телефоне](PILOT-LOG.md) | Android/iOS чек-лист S8, 8 снимков, offline/sync, удаление/замена | Ожидает устройства |
 | — | [RUNBOOK.md](RUNBOOK.md) | Запуск, миграции, seed, тесты, API, OIDC/устройства/ЭП, ограничения | 0.9.3 |
 | — | [ТЗ v1.0 (архив)](ТЗ_Электронный_оперативный_журнал.md) | Исходная редакция | Архив |
@@ -147,13 +148,13 @@ Backend, PWA-клиент, офлайн-синхронизация и журна
 | `apps/api` | NestJS 11: auth/CSRF + OIDC, devices, journal, journals (мультижурнальность), shifts (сдача-приёмка смены), groundings (реестр заземлений), permits (PDF/signed URL, адаптеры источника), sync/merge (C-08…C-10), dictionaries, audit, admin, reviews/export |
 | `apps/web` | S-01…S-16 + админ-контур `/admin` (пользователи, роли, журналы, устройства, импорт нарядов, хранение, экспорт, аудит; ADR-14); S-15 «Смены», S-16 «Заземления», структурированные переключения 757; Dexie v5 с per-user IndexedDB (`logbook:user:<id>`) и device-базой, кэш руководителя 7 дней/15 МиБ, outbox (`entry`/`shift`), sync-engine, кастомный SW (Background/Periodic Sync), миграции IDB со снимком и откатом, офлайн-панель, ЭП-подсказки и подписи виз/записей/смен, интеграция S-02↔S-15↔S-16, PWA, печатные формы |
 | `packages/shared` | Типы `/v1`, Zod, HLC, UUID v7, seed-данные, event_data (переключения/заземления), журналы, смены, сокращения |
-| `db/migrations` | `0001` … `0019_attachment_soft_delete`, 37 таблиц |
+| `db/migrations` | `0001` … `0020_site_name_raw`, 38 таблиц |
 | `db/seed` | 3 пользователя, 2 журнала, 5 типов работ; демо-профиль `electrical` — 6 нарядов/распоряжений и 9 записей; тестовый профиль — 3/5 |
 | `demo/` | `demo:start`, `demo:reset`, `demo:permits`, сценарий презентации |
 
-Проверено 28.11.2026 (текущее дерево после attachments): `npm test` — **310 тестов** (28 shared, 127 API, 155 web); `npm run typecheck` — без ошибок; `npm run build` — shared + API + web (main **605,27 КБ / 177,73 КБ gzip**, lazy PDF chunk 434,83 КБ / 180,05 КБ gzip; precache 12 файлов / 1044,88 КиБ); миграции `0001…0019` применяются к PGlite (fresh и upgrade 0014→0016). Приёмочный срез t15: 259 тестов и 527,53 КБ / 151,77 КБ gzip, 14 миграций. QA-06 push 50 ops на PG 15: p95 **349,1 мс** при 20 VU (порог 400; t17 — 279,6; gapless-вариант t23 — 620 и отменён). Базовая линия t3 — 123 теста и 416,47 КБ / 126,67 КБ gzip (см. отчёты 24/27/28/29/30/31/32/33/34/37/39/40).
+Проверено 28.11.2026 (текущее дерево после attachments): `npm test` — **316 тестов** (29 shared, 131 API, 156 web); `npm run typecheck` — без ошибок; `npm run build` — shared + API + web (main **612,82 КБ / 179,40 КБ gzip**, lazy PDF chunk 434,83 КБ / 180,05 КБ gzip; precache 12 файлов / 1052,58 КиБ); миграции `0001…0020` применяются к PGlite (fresh и upgrade 0014→0016). Приёмочный срез t15: 259 тестов и 527,53 КБ / 151,77 КБ gzip, 14 миграций. QA-06 push 50 ops на PG 15: p95 **349,1 мс** при 20 VU (порог 400; t17 — 279,6; gapless-вариант t23 — 620 и отменён). Базовая линия t3 — 123 теста и 416,47 КБ / 126,67 КБ gzip (см. отчёты 24/27/28/29/30/31/32/33/34/37/39/40).
 
-> **Текущее дерево (28.11.2026)** содержит `0019_attachment_soft_delete` (0001–0019), attachment scan (offline camera/PDF/outbox), offline PIN/сессию (t21), rate limit/security headers (t22), `audit_outbox`/0015–0016 (t23/t29), retention scheduler (t24), qualified/OIDC harness (t25), E2E/axe (t26), cold-load ANALYZE/loadtest (t30). Финальная приёмка **t33 — FAIL / NOT PASS**: OQ-02/04/05/18, G1/G2, Docker/Linux/pentest — блокеры. Актуальные документы — [24 v3.0](24_Остаток_разработки.md), [07 v3.0](07_Матрица_трассируемости.md), [38](38_Релизный_отчёт.md), [46](46_Gap_audit_Attachments.md).
+> **Текущее дерево (28.11.2026)** содержит `0020_site_name_raw` (0001–0020), attachment scan (offline camera/PDF/outbox), manual site fallback (site_name_raw/unresolved), offline PIN/сессию (t21), rate limit/security headers (t22), `audit_outbox`/0015–0016 (t23/t29), retention scheduler (t24), qualified/OIDC harness (t25), E2E/axe (t26), cold-load ANALYZE/loadtest (t30). Финальная приёмка **t33 — FAIL / NOT PASS**: OQ-02/04/05/18, G1/G2, Docker/Linux/pentest — блокеры. Актуальные документы — [24 v3.0](24_Остаток_разработки.md), [07 v3.0](07_Матрица_трассируемости.md), [38](38_Релизный_отчёт.md), [46](46_Gap_audit_Attachments.md).
 
 Отчёты: [23_Отчёт_Правила_ЭОЖ.md](23_Отчёт_Правила_ЭОЖ.md), [22_Отчёт_Phase0-A.md](22_Отчёт_Phase0-A.md), [21_Отчёт_Шаг5.md](21_Отчёт_Шаг5.md); команды — [RUNBOOK.md](RUNBOOK.md), production-установка — [35_Руководство_по_установке.md](35_Руководство_по_установке.md).
 
@@ -232,4 +233,6 @@ Backend, PWA-клиент, офлайн-синхронизация и журна
 | 3.14 | 27.11.2026 | t32 (F-01 residual): fixture-ANALYZE недостаточен (первый load 851.5), после post-load ANALYZE 138.5; независимый cold fresh с warm-up+ANALYZE 136.6/362.5; ANALYZE в fixture/loadtest, `WARMUP_MS`, 35 §6.5/6.6, `docs/loadtest/t32` |
 | 3.15 | 27.11.2026 | t33: cold verify по 35 — read 73.4/changes 146.2/push 374.2, warm 73.2/143.7/359.9, production-limit 99.145% 429; 306 тестов, fresh/upgrade 0017, E2E 12/12, axe 0; F-01/F-02/F-04 closed; release **FAIL** из-за внешних OQ/G1/G2/Linux/Docker/pentest, p99 push ~2.5 с |
 | 3.16 | 27.11.2026 | t34: `45_Сценарий_демо.md` — пошаговый сценарий S1–S7 на доменных данных (6 нарядов/распоряжений ELEC/HEIGHT/LIFT/HOT+2 ORDER, 9 записей, 3 объекта, 5 типов работ; 3 late_entry, №4 вне срока наряда, 2 supervisor, 3 verified), тайминг 60/30 минут, роли worker/supervisor/admin, ожидаемые результаты, fallback и чек-лист заказчика; ссылки на 44/PILOT-RUN; `demo/SCENARIO.md` — указатель; release-статус не меняется |
+
+
 

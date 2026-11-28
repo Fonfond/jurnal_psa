@@ -35,6 +35,8 @@ export interface EntryInput {
   performed_at_source?: 'device_auto' | 'manual' | 'server_corrected';
   work_type_id: string;
   site_id: string | null;
+  site_name_raw?: string | null;
+  site_binding_status?: 'linked' | 'unresolved' | 'not_found' | 'not_required';
   permit_id: string | null;
   permit_number_raw?: string | null;
   permit_binding_status?: 'linked' | 'unresolved' | 'not_required';
@@ -158,6 +160,14 @@ function payloadOf(input: EntryInput): Record<string, unknown> {
     performed_at_comment: input.performed_at_comment ?? null,
     work_type_id: input.work_type_id,
     site_id: input.site_id,
+    site_name_raw: input.site_id ? null : (input.site_name_raw ?? null),
+    site_binding_status:
+      input.site_binding_status ??
+      (input.site_id
+        ? 'linked'
+        : input.site_name_raw
+          ? 'unresolved'
+          : 'not_required'),
     permit_id: input.permit_id,
     permit_number_raw: input.permit_id ? null : (input.permit_number_raw ?? null),
     permit_binding_status:
@@ -203,6 +213,10 @@ function baseEntry(
     shift_date: (payload.shift_date as string | null) ?? null,
     work_type_id: String(payload.work_type_id),
     site_id: (payload.site_id as string | null) ?? null,
+    site_name_raw: (payload.site_name_raw as string | null) ?? null,
+    site_binding_status:
+      (payload.site_binding_status as ClientJournalEntry['site_binding_status']) ??
+      (payload.site_id ? 'linked' : 'not_required'),
     permit_id: (payload.permit_id as string | null) ?? null,
     permit_number_raw: (payload.permit_number_raw as string | null) ?? null,
     permit_binding_status:

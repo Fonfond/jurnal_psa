@@ -22,7 +22,7 @@ curl http://localhost:3000/v1/health
 Ожидаемо:
 
 - `logbook-pilot-db` — healthy;
-- `logbook-pilot-seed` — exited 0, в логах `0001…0019`, `Seed complete: users=3, permits=6, entries=9, demo_data=true; ANALYZE done` (доменные демо-данные);
+- `logbook-pilot-seed` — exited 0, в логах `0001…0020`, `Seed complete: users=3, permits=6, entries=9, demo_data=true; ANALYZE done` (доменные демо-данные);
 - `logbook-pilot-app` — healthy;
 - health: `{"status":"ok","db":"ok"}`.
 
@@ -68,6 +68,19 @@ docker compose -f docker-compose.pilot.yml up --build -d
 - PDF **не** хранится в PostgreSQL, только metadata.
 
 Демо-данные уже содержат ELEC-скан на 2 стр. и HOT-скан на 8 стр. для проверки S-05.
+
+### Объект вне справочника
+
+В S-03 «Объект» можно выбрать из справочника или нажать «Другой объект» и ввести
+название текстом. Запись сохраняется всегда; после синхронизации сервер
+нормализует имя (регистр, пробелы, ё→е) и пытается связать со справочником.
+Если не найдено — `not_found`, в S-05 бейдж «Объект не в справочнике».
+
+- supervisor/admin в S-05: «Привязать к справочнику»;
+- admin `/admin/sites`: очередь «Не привязанные объекты» — создать объект,
+  привязать к существующему или игнорировать;
+- Site автоматически не создаётся.
+
 
 ## 3. Проверка на телефоне (HTTP)
 
@@ -164,4 +177,5 @@ docker compose -f docker-compose.pilot.yml down
 ```
 
 Данные — volume `jurnal_logbook-pilot-pgdata`; удаление — `down -v` (необратимо).
+
 
