@@ -22,7 +22,7 @@ curl http://localhost:3000/v1/health
 Ожидаемо:
 
 - `logbook-pilot-db` — healthy;
-- `logbook-pilot-seed` — exited 0, в логах `0001…0018`, `Seed complete: users=3, permits=6, entries=9, demo_data=true; ANALYZE done` (доменные демо-данные);
+- `logbook-pilot-seed` — exited 0, в логах `0001…0019`, `Seed complete: users=3, permits=6, entries=9, demo_data=true; ANALYZE done` (доменные демо-данные);
 - `logbook-pilot-app` — healthy;
 - health: `{"status":"ok","db":"ok"}`.
 
@@ -63,7 +63,8 @@ docker compose -f docker-compose.pilot.yml up --build -d
 - камера/файл, до 10 страниц, до 20 МБ;
 - сжатие до 1600 px и JPEG 0.8, PDF собирается на клиенте;
 - PDF хранится в IndexedDB и уходит в object-volume после синхронизации записи;
-- один скан на запись; после загрузки ссылка — в S-05 «Документы»;
+- один активный скан на запись; после загрузки ссылка — в S-05 «Документы»;
+- ошиблись? «Удалить скан» в S-05 → soft-delete с аудитом → «Прикрепить скан» заново в S-03;
 - PDF **не** хранится в PostgreSQL, только metadata.
 
 Демо-данные уже содержат ELEC-скан на 2 стр. и HOT-скан на 8 стр. для проверки S-05.
@@ -163,3 +164,4 @@ docker compose -f docker-compose.pilot.yml down
 ```
 
 Данные — volume `jurnal_logbook-pilot-pgdata`; удаление — `down -v` (необратимо).
+

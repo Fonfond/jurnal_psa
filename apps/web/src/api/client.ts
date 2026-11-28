@@ -400,6 +400,13 @@ export const api = {
     );
   },
 
+  deleteAttachment(entryId: string, attachmentId: string): Promise<{ ok: true }> {
+    return request<{ ok: true }>(
+      `/entries/${entryId}/attachments/${attachmentId}`,
+      { method: 'DELETE' },
+    );
+  },
+
   /** Manual review signature through the configured ЭП adapter (OQ-04). */
   signReview(id: string, reason?: string): Promise<SignatureRecord> {
     return request<SignatureRecord>(`/journal/reviews/${id}/sign`, {

@@ -13,7 +13,7 @@ describe('database migrations and seed', () => {
     await client.close();
   });
 
-  it('applies 0001..0018 once and is idempotent', async () => {
+  it('applies 0001..0019 once and is idempotent', async () => {
     const first = await runMigrations(client);
     expect(first).toEqual([
       '0001_init.sql',
@@ -34,6 +34,7 @@ describe('database migrations and seed', () => {
       '0016_journal_seq_gaps_policy.sql',
       '0017_retention_scheduler.sql',
       '0018_entry_attachments.sql',
+      '0019_attachment_soft_delete.sql',
     ]);
 
     const second = await runMigrations(client);
@@ -42,7 +43,7 @@ describe('database migrations and seed', () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from schema_migrations',
     );
-    expect(applied.rows[0]?.count).toBe('18');
+    expect(applied.rows[0]?.count).toBe('19');
   }, 120_000);
 
   it('creates the expected schema', async () => {

@@ -899,7 +899,19 @@ export async function createPermitScan(
 }
 
 export async function listLocalAttachments(entryId: string): Promise<AttachmentRow[]> {
-  return db.attachments.where('entry_id').equals(entryId).toArray();
+  return db.attachments
+    .where('entry_id')
+    .equals(entryId)
+    .filter((row) => !row.deleted_at)
+    .toArray();
+}
+
+/** Remove a still-local scan and its not-yet-sent upload operation. */
+export async function deleteLocalAttachment(id: string): Promise<void> {
+  await db.transaction('rw', db.attachments, db.outbox, async () => {
+    await db.outbox.where('entity_id').equals(id).delete();
+    await db.attachments.delete(id);
+  });
 }
 
 export async function saveConflicts(

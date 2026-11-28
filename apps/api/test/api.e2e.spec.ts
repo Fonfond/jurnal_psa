@@ -4,6 +4,7 @@ import request from 'supertest';
 import type { SuperAgentTest } from 'supertest';
 import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
+import { PDFDocument } from 'pdf-lib';
 import { uuidv7 } from '@logbook/shared';
 import { seedDatabase } from '../../../db/seed/seed';
 import { AppModule } from '../src/app.module';
@@ -75,6 +76,15 @@ async function login(
 
 function authHeaders(csrf: string): Record<string, string> {
   return { 'X-CSRF-Token': csrf };
+}
+
+async function makePdf(pages: number): Promise<Buffer> {
+  const document = await PDFDocument.create();
+  for (let index = 0; index < pages; index += 1) {
+    const page = document.addPage([300, 400]);
+    page.drawText(`page ${index + 1}`, { x: 20, y: 200 });
+  }
+  return Buffer.from(await document.save());
 }
 
 function entryOp(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -836,7 +846,7 @@ describe('dictionaries, audit and admin', () => {
 describe('paper permit scan attachment', () => {
   it('uploads one PDF per entry idempotently and serves a signed URL', async () => {
     const worker = await login(context.app, 'worker@logbook.local');
-    const pdf = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF\n');
+    const pdf = await makePdf(2);
     const hash = createHash('sha256').update(pdf).digest('hex');
     const entryId = SEED_ENTRY_WORKER;
 
@@ -881,7 +891,7 @@ describe('paper permit scan attachment', () => {
       .expect(200)
       .expect('Content-Type', /application\/pdf/);
 
-    const otherPdf = Buffer.from('%PDF-1.4\nother\n%%EOF\n');
+    const otherPdf = await makePdf(1);
     await worker.agent
       .post(`/v1/entries/${entryId}/attachments`)
       .set(authHeaders(worker.csrf))
@@ -889,16 +899,36 @@ describe('paper permit scan attachment', () => {
       .field('sha256', createHash('sha256').update(otherPdf).digest('hex'))
       .attach('file', otherPdf, { filename: 'other.pdf', contentType: 'application/pdf' })
       .expect(400);
+
+    await worker.agent
+      .delete(`/v1/entries/${entryId}/attachments/${first.body.id}`)
+      .set(authHeaders(worker.csrf))
+      .expect(200);
+
+    const replacement = await worker.agent
+      .post(`/v1/entries/${entryId}/attachments`)
+      .set(authHeaders(worker.csrf))
+      .field('pages', '1')
+      .field('sha256', createHash('sha256').update(otherPdf).digest('hex'))
+      .attach('file', otherPdf, { filename: 'replacement.pdf', contentType: 'application/pdf' })
+      .expect(201);
+    expect(replacement.body.id).not.toBe(first.body.id);
+
+    const afterReplace = await worker.agent
+      .get(`/v1/entries/${entryId}/attachments`)
+      .expect(200);
+    expect(afterReplace.body.items).toHaveLength(1);
+    expect(afterReplace.body.items[0].id).toBe(replacement.body.id);
   });
 
-  it('rejects more than 10 pages and non-PDF uploads', async () => {
+  it('rejects more than 10 pages and a page-count mismatch', async () => {
     const worker = await login(context.app, 'worker@logbook.local');
-    const pdf = Buffer.from('%PDF-1.4\nx\n%%EOF\n');
+    const pdf = await makePdf(11);
     const hash = createHash('sha256').update(pdf).digest('hex');
     await worker.agent
       .post(`/v1/entries/${SEED_ENTRY_PLAIN}/attachments`)
       .set(authHeaders(worker.csrf))
-      .field('pages', '11')
+      .field('pages', '2')
       .field('sha256', hash)
       .attach('file', pdf, { filename: 'permit.pdf', contentType: 'application/pdf' })
       .expect(400);

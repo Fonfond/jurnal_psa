@@ -11,6 +11,7 @@ import { api } from '../api/client';
 import { db, type AttachmentRow } from '../db/schema';
 import {
   applyServerEntry,
+  deleteLocalAttachment,
   deleteLocalEntry,
   getLocalEntry,
   listLocalAttachments,
@@ -131,6 +132,23 @@ export function EntryCardScreen(): JSX.Element {
     }
     return undefined;
   }, [id, attachment?.blob, attachment?.server_id, attachment?.id]);
+
+  const removeAttachment = async (): Promise<void> => {
+    if (!id || !attachment) return;
+    if (!window.confirm('Удалить скан наряда? Оригинал бумажного наряда остаётся на объекте.')) {
+      return;
+    }
+    setError(null);
+    try {
+      const serverId = attachment.server_id ?? (attachment.blob ? null : attachment.id);
+      if (serverId) await api.deleteAttachment(id, serverId);
+      await deleteLocalAttachment(attachment.id);
+      setAttachmentUrl(null);
+      setLocalAttachmentUrl(null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Не удалось удалить скан');
+    }
+  };
 
   if (!data) {
     return <Loader label="Загружаем запись…" />;
@@ -414,7 +432,20 @@ export function EntryCardScreen(): JSX.Element {
       <section className="card" aria-labelledby="documents-heading">
         <h2 id="documents-heading">Документы</h2>
         {!attachment ? (
-          <p className="muted">Скан бумажного наряда не прикреплён.</p>
+          <>
+            <p className="muted">Скан бумажного наряда не прикреплён.</p>
+            {user &&
+            (user.role === 'admin' ||
+              user.role === 'supervisor' ||
+              entry.author_id === user.id) ? (
+              <Link
+                to={`/entries/${entry.id}/edit`}
+                className="button button--ghost"
+              >
+                Прикрепить скан
+              </Link>
+            ) : null}
+          </>
         ) : (
           <div className="attachment-card">
             <p>
@@ -439,6 +470,18 @@ export function EntryCardScreen(): JSX.Element {
                 Скан хранится локально и откроется после загрузки/синхронизации.
               </p>
             )}
+            {user &&
+            (user.role === 'admin' ||
+              user.role === 'supervisor' ||
+              attachment.created_by === user.id) ? (
+              <button
+                type="button"
+                className="button button--danger button--small"
+                onClick={() => void removeAttachment()}
+              >
+                Удалить скан
+              </button>
+            ) : null}
           </div>
         )}
       </section>

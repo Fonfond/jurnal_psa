@@ -1,5 +1,6 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
+import { PDFDocument } from 'pdf-lib';
 import { DomainError, uuidv7, type EntryAttachment } from '@logbook/shared';
 import { AuditService } from '../audit/audit.service';
 import { JournalService } from '../journal/journal.service';
@@ -123,6 +124,24 @@ export class AttachmentService {
     if (!Number.isInteger(pages) || pages < 1 || pages > MAX_PAGES) {
       throw new DomainError('E-VAL-01', 'В скане должно быть от 1 до 10 страниц');
     }
+    let actualPages: number;
+    try {
+      const document = await PDFDocument.load(file.buffer, {
+        ignoreEncryption: true,
+      });
+      actualPages = document.getPageCount();
+    } catch {
+      throw new DomainError('E-VAL-01', 'Не удалось прочитать страницы PDF');
+    }
+    if (actualPages > MAX_PAGES) {
+      throw new DomainError('E-VAL-01', 'В скане не может быть больше 10 страниц');
+    }
+    if (actualPages !== pages) {
+      throw new DomainError(
+        'E-VAL-01',
+        'Количество страниц PDF не совпадает с metadata',
+      );
+    }
     const suppliedSha = String(body.sha256 ?? '').toLowerCase();
     if (!SHA256_RE.test(suppliedSha)) {
       throw new DomainError('E-VAL-01', 'sha256 обязателен');
@@ -186,6 +205,58 @@ export class AttachmentService {
       [entryId],
     );
     return { items: rows.rows.map((row) => this.map(row, true)) };
+  }
+
+  /**
+   * Soft-delete the active scan. The object and row remain for audit; the
+   * partial unique index then allows a replacement scan.
+   */
+  async remove(
+    actor: AuthUser,
+    entryId: string,
+    attachmentId: string,
+    meta: RequestMeta,
+  ): Promise<{ ok: true }> {
+    await this.journal.get(actor, entryId);
+    const rows = await this.db.query<AttachmentRow>(
+      `select * from entry_attachments
+        where id = $1 and entry_id = $2 and deleted_at is null`,
+      [attachmentId, entryId],
+    );
+    const row = rows.rows[0];
+    if (!row) throw new DomainError('E-NOT-01', 'Скан не найден');
+    if (
+      actor.role !== 'admin' &&
+      actor.role !== 'supervisor' &&
+      row.created_by !== actor.id
+    ) {
+      throw new DomainError('E-AUTH-02', 'Недостаточно прав для удаления скана');
+    }
+    const now = new Date().toISOString();
+    await this.db.transaction(async (tx) => {
+      await tx.query(
+        `update entry_attachments
+            set deleted_at = $1, deleted_by = $2
+          where id = $3`,
+        [now, actor.id, attachmentId],
+      );
+      await this.audit.record(tx, {
+        actorId: actor.id,
+        actorRole: actor.role,
+        action: 'attachment.delete',
+        entityType: 'entry',
+        entityId: entryId,
+        before: {
+          attachment_id: attachmentId,
+          pages: row.pages,
+          sha256: row.sha256,
+        },
+        after: { deleted_at: now, deleted_by: actor.id },
+        source: 'server',
+        ...meta,
+      });
+    });
+    return { ok: true };
   }
 
   async signedUrl(

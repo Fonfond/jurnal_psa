@@ -58,13 +58,14 @@
 ## 4. Реализация (28.11.2026)
 
 - миграция `0018_entry_attachments.sql`: metadata + unique `(entry_id, sha256)`, один активный скан на запись;
-- `AttachmentModule`: multipart upload, list, signed URL (900 с), публичный stream-download;
+- миграция `0019_attachment_soft_delete.sql`: `deleted_at`/`deleted_by`, замена скана; старый остаётся в аудите;
+- `AttachmentModule`: multipart upload, **серверный подсчёт страниц PDF (`pdf-lib`)**, list, signed URL (900 с), публичный stream-download, `DELETE` soft-delete;
 - PDF в отдельном object-volume (`ATTACHMENTS_DIR`), **не** в PostgreSQL;
 - попытка MinIO: образ `minio/minio` в текущем registry недоступен (pull access denied), поэтому демо-драйвер файловый; интерфейс Object Storage изолирован для замены на S3/MinIO;
 - Dexie v6 `attachments` (Blob), outbox `entity_type=attachment`, загрузка после sync записи;
 - S-03: ручной номер наряда + камера/до 10 страниц/сжатие 1600 px/PDF `pdf-lib`;
-- S-05: «Документы», копия бумажного наряда, ссылка на скан;
-- тесты: API upload/idempotency/pages/signed URL; web offline scan/outbox;
+- S-05: «Документы», копия бумажного наряда, ссылка на скан, «Удалить скан» (автор/супервизор/админ), после — «Прикрепить скан»;
+- тесты: API upload/idempotency/page-count mismatch/pages>10/delete+replace/signed URL; web offline scan/outbox;
 - production-статус не менялся.
 
 ## 5. Ограничение

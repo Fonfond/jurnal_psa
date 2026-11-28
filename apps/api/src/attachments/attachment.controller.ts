@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Inject,
   Param,
@@ -55,6 +56,16 @@ export class AttachmentController {
   @Get('entries/:id/attachments')
   async list(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.attachments.list(user, id);
+  }
+
+  @Delete('entries/:id/attachments/:attachmentId')
+  async remove(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('attachmentId') attachmentId: string,
+    @Req() request: Request & AppRequest,
+  ) {
+    return this.attachments.remove(user, id, attachmentId, metaOf(request));
   }
 
   @Get('entries/:id/attachments/:attachmentId')
