@@ -2,6 +2,7 @@ import type {
   DeviceRegistrationInput,
   DeviceRegistrationResponse,
   Grounding,
+  EntryAttachment,
   JournalReview,
   OutboxOperation,
   Role,
@@ -70,6 +71,13 @@ export interface SyncApi {
   permits(): Promise<PermitsResponse>;
   changes(sinceSeq: number, limit?: number): Promise<ChangesResponse>;
   push(body: SyncPushRequest, deviceKey?: string): Promise<PushResponse>;
+  /** Paper-permit scan upload (PDF Blob, not part of /sync/push). */
+  uploadAttachment?(
+    entryId: string,
+    pdf: Blob,
+    pages: number,
+    sha256: string,
+  ): Promise<EntryAttachment>;
   /** Optional: server-side conflicts for the offline S-13 review (ADR-04). */
   conflicts?(): Promise<ConflictsResponse>;
   /** Optional: supervisor cache stores the journal reviews as well. */
@@ -212,6 +220,7 @@ export class SyncEngine {
       await resetInFlight();
       await this.bootstrap();
       const pushed = await this.push();
+      const attachmentsUploaded = await this.uploadPendingAttachments();
       const pulled = await this.pullChanges();
       await this.refreshSupervisorCacheIfNeeded();
       await this.pullConflictsIfAvailable();
@@ -219,7 +228,7 @@ export class SyncEngine {
       await setMeta('sync_error', '');
       return {
         status: 'ok',
-        pushed: pushed.pushed,
+        pushed: pushed.pushed + attachmentsUploaded,
         pulled: pulled.pulled,
         conflicts: pushed.conflicts,
       };
@@ -298,7 +307,9 @@ export class SyncEngine {
   }
 
   private async push(): Promise<{ pushed: number; conflicts: number }> {
-    const operations = await pendingOperations(this.now());
+    const operations = (await pendingOperations(this.now())).filter(
+      (operation) => operation.entity_type !== 'attachment',
+    );
     if (operations.length === 0) {
       return { pushed: 0, conflicts: 0 };
     }
@@ -339,7 +350,7 @@ export class SyncEngine {
             app_version: this.appVersion,
             ops: chunk.map((operation) => ({
               op_id: operation.op_id,
-              entity_type: operation.entity_type,
+              entity_type: operation.entity_type as 'entry' | 'shift',
               entity_id: operation.entity_id,
               op_type: operation.op_type,
               base_version: operation.base_version,
@@ -383,6 +394,54 @@ export class SyncEngine {
     }
 
     return { pushed, conflicts };
+  }
+
+  private async uploadPendingAttachments(): Promise<number> {
+    if (!this.api.uploadAttachment) return 0;
+    const operations = (await pendingOperations(this.now())).filter(
+      (operation) => operation.entity_type === 'attachment',
+    );
+    let uploaded = 0;
+    for (const operation of operations) {
+      const row = await db.attachments.get(operation.entity_id);
+      if (!row?.blob) {
+        await failOperation(
+          operation,
+          { code: 'E-VAL-01', message: 'PDF скан не найден локально' },
+          backoffDelayMs(operation.attempts + 1),
+        );
+        continue;
+      }
+      await markInFlight([operation.op_id]);
+      await db.attachments.update(row.id, { status: 'uploading', last_error: null });
+      try {
+        const attachment = await this.api.uploadAttachment(
+          row.entry_id,
+          row.blob,
+          row.pages,
+          row.sha256,
+        );
+        await db.attachments.update(row.id, {
+          status: 'uploaded',
+          server_id: attachment.id,
+          url: attachment.url,
+          last_error: null,
+        });
+        await completeOperation(operation.op_id);
+        uploaded += 1;
+      } catch (error) {
+        const code = error instanceof ApiError ? error.code : 'E-NET-01';
+        const message =
+          error instanceof Error ? error.message : 'Не удалось загрузить скан';
+        await db.attachments.update(row.id, { status: 'error', last_error: message });
+        await failOperation(
+          operation,
+          { code, message },
+          backoffDelayMs(operation.attempts + 1),
+        );
+      }
+    }
+    return uploaded;
   }
 
   private async handleResult(

@@ -1485,3 +1485,63 @@ pre {
 .admin-screen {
   max-width: none;
 }
+
+/* Paper-permit scan (Attachment v1.1) */
+.scan-box {
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 0.7rem;
+  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.scan-box__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.scan-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scan-page {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.scan-page img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
+.scan-page__actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.25rem;
+  background: rgb(255 255 255 / 0.92);
+}
+
+.attachment-card {
+  border-left: 3px solid var(--primary);
+  padding-left: 0.8rem;
+}
+
+.attachment-card p {
+  margin-bottom: 0.4rem;
+}
+

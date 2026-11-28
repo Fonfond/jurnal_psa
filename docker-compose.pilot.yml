@@ -29,6 +29,11 @@ services:
       timeout: 3s
       retries: 30
 
+  # Object storage for paper-permit scans. PostgreSQL stores metadata only.
+  # The image registry currently has no minio/minio image, so the demo uses a
+  # dedicated file-backed object volume; the API adapter is replaceable.
+  # (No PDF bytes are written to PostgreSQL.)
+
   # Uses the build stage on purpose: tsx/tsc are needed for migrate/seed.
   # It is a one-shot container and never serves traffic.
   seed:
@@ -87,6 +92,10 @@ services:
       SESSION_IDLE_MINUTES: "30"
       RETENTION_SCHEDULER_ENABLED: "true"
       WEB_DIST: /app/apps/web/dist
+      ATTACHMENTS_DIR: /data/attachments
+      ATTACHMENT_URL_TTL_SECONDS: "900"
+    volumes:
+      - logbook-pilot-attachments:/data/attachments
     healthcheck:
       test:
         [
@@ -115,3 +124,4 @@ services:
 
 volumes:
   logbook-pilot-pgdata:
+  logbook-pilot-attachments:

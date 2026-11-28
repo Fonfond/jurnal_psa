@@ -7,6 +7,7 @@ import {
   type EntryRevision,
   type Grounding,
   type Hlc,
+  type EntryAttachment,
   type Journal,
   type JournalEntry,
   type JournalReview,
@@ -26,6 +27,15 @@ export interface ClientJournalEntry extends JournalEntry {
 export interface EntryWorkerRow {
   entry_id: string;
   user_id: string;
+}
+
+/** Local attachment row: metadata + PDF blob until the server upload succeeds. */
+export interface AttachmentRow extends EntryAttachment {
+  blob?: Blob;
+  created_at_local?: string;
+  server_id?: string;
+  deleted_at?: string | null;
+  last_error?: string | null;
 }
 
 export interface DraftRow {
@@ -68,7 +78,7 @@ export interface SupervisorCacheRow {
 export const LEGACY_DB_NAME = 'logbook';
 
 /** Declared Dexie schema version (ADR-18 migrations compare against it). */
-export const CLIENT_SCHEMA_VERSION = 5;
+export const CLIENT_SCHEMA_VERSION = 6;
 
 /**
  * Client-side source of truth (ADR-01).
@@ -102,6 +112,8 @@ export class LogbookDatabase extends Dexie {
   shifts!: Table<Shift, string>;
   /** Grounding registry cache (JRN-06), derived from grounding events. */
   groundings!: Table<Grounding, string>;
+  /** Paper-permit scans (PDF blob stays local until uploaded). */
+  attachments!: Table<AttachmentRow, string>;
 
   constructor(name = LEGACY_DB_NAME) {
     super(name);
@@ -213,6 +225,10 @@ export class LogbookDatabase extends Dexie {
     this.version(5).stores({
       groundings:
         'id, journal_id, site_id, state, point, grounding_type, updated_at_server',
+    });
+    // v6: one paper-permit scan per entry; the PDF is a Blob in IndexedDB.
+    this.version(6).stores({
+      attachments: 'id, entry_id, kind, status, sha256, created_at_local',
     });
   }
 }

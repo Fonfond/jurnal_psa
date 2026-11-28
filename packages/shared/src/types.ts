@@ -432,11 +432,40 @@ export interface ShiftActionInput {
   rejection_reason?: string | null;
 }
 
+export type AttachmentKind = 'permit_scan';
+export type AttachmentStatus = 'local' | 'uploading' | 'uploaded' | 'error';
+
+/**
+ * A scanned paper permit attached to a journal entry. The binary PDF is stored
+ * in Object Storage, never in PostgreSQL; this row is metadata only.
+ */
+export interface EntryAttachment {
+  id: UUID;
+  entry_id: UUID;
+  kind: AttachmentKind;
+  mime_type: 'application/pdf';
+  pages: number;
+  sha256: string;
+  size_bytes: number;
+  status: AttachmentStatus;
+  created_by: UUID;
+  created_at: IsoDateTime;
+  /** Short-lived API URL returned by the metadata/list endpoint. */
+  url?: string;
+  expires_at?: IsoDateTime;
+}
+
+export interface AttachmentSignedUrl {
+  url: string;
+  expires_at: IsoDateTime;
+  expires_in: number;
+}
+
 export interface OutboxOperation {
   op_id: UUID;
   user_id: UUID;
   device_id: UUID;
-  entity_type: 'entry' | 'shift';
+  entity_type: 'entry' | 'shift' | 'attachment';
   entity_id: UUID;
   op_type: OpType;
   payload: Record<string, unknown>;

@@ -2,6 +2,7 @@ import type {
   ConflictRecord,
   DeviceRegistrationInput,
   DeviceRegistrationResponse,
+  EntryAttachment,
   Grounding,
   Journal,
   JournalEntry,
@@ -350,6 +351,16 @@ export interface ConflictsResponse {
 
 export interface ReviewsResponse {
   items: JournalReview[];
+}
+
+export interface AttachmentsResponse {
+  items: EntryAttachment[];
+}
+
+export interface AttachmentSignedUrlResponse {
+  url: string;
+  expires_at: string;
+  expires_in: number;
 }
 
 export type PushResponse = SyncPushResponse;

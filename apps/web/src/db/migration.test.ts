@@ -66,7 +66,7 @@ describe('IndexedDB migration with snapshot (ADR-18/SYN-04)', () => {
     expect(report.status).toBe('fresh');
     expect(report.from_version).toBeNull();
     expect(report.verification).toBe('skipped');
-    expect(database?.verno).toBe(5);
+    expect(database?.verno).toBe(6);
     await database?.close();
   });
 
@@ -80,7 +80,7 @@ describe('IndexedDB migration with snapshot (ADR-18/SYN-04)', () => {
   });
 
   it(
-    'migrates 10 000 entries from v3 to v5 with a verified snapshot',
+    'migrates 10 000 entries from v3 to v6 with a verified snapshot',
     async () => {
       const name = 'logbook:migration-10k';
       await seedLegacy(name, 10_000);
@@ -89,7 +89,7 @@ describe('IndexedDB migration with snapshot (ADR-18/SYN-04)', () => {
 
       expect(report.status).toBe('upgraded');
       expect(report.from_version).toBe(3);
-      expect(report.to_version).toBe(5);
+      expect(report.to_version).toBe(6);
       expect(report.verification).toBe('passed');
       expect(report.snapshot?.rows).toBe(10_001);
       expect(await database?.entries.count()).toBe(10_000);
@@ -178,7 +178,7 @@ describe('IndexedDB migration with snapshot (ADR-18/SYN-04)', () => {
       database: name,
       created_at: new Date().toISOString(),
       from_version: 3,
-      to_version: 5,
+      to_version: 6,
       stores: { entries: 3, meta: 1 },
       rows: 4,
     });
@@ -192,3 +192,4 @@ describe('IndexedDB migration with snapshot (ADR-18/SYN-04)', () => {
     expect((await storeCounts(name)).entries).toBe(3);
   });
 });
+

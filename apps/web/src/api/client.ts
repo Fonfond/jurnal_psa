@@ -4,6 +4,7 @@ import type {
   ConflictRecord,
   DeviceRegistrationInput,
   DeviceRegistrationResponse,
+  EntryAttachment,
   Grounding,
   JournalEntry,
   JournalReview,
@@ -30,6 +31,8 @@ import type {
   AdminUser,
   AdminUsersResponse,
   ArchiveRow,
+  AttachmentSignedUrlResponse,
+  AttachmentsResponse,
   AuditEventRow,
   AuditVerifyResult,
   BackupManifest,
@@ -100,7 +103,7 @@ async function request<T>(
   const method = (init.method ?? 'GET').toUpperCase();
   const headers = new Headers(init.headers);
 
-  if (init.body && !headers.has('Content-Type')) {
+  if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
   if (UNSAFE_METHODS.has(method)) {
@@ -366,6 +369,35 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     });
+  },
+
+  attachments(entryId: string): Promise<AttachmentsResponse> {
+    return request<AttachmentsResponse>(`/entries/${entryId}/attachments`);
+  },
+
+  uploadAttachment(
+    entryId: string,
+    pdf: Blob,
+    pages: number,
+    sha256: string,
+  ): Promise<EntryAttachment> {
+    const form = new FormData();
+    form.append('file', pdf, 'permit-scan.pdf');
+    form.append('pages', String(pages));
+    form.append('sha256', sha256);
+    return request<EntryAttachment>(`/entries/${entryId}/attachments`, {
+      method: 'POST',
+      body: form,
+    });
+  },
+
+  attachmentUrl(
+    entryId: string,
+    attachmentId: string,
+  ): Promise<AttachmentSignedUrlResponse> {
+    return request<AttachmentSignedUrlResponse>(
+      `/entries/${entryId}/attachments/${attachmentId}`,
+    );
   },
 
   /** Manual review signature through the configured ЭП adapter (OQ-04). */

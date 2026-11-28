@@ -210,7 +210,7 @@ export class AuthController {
       features: {
         voice: false, // TODO(G1)
         web_speech: false, // TODO(OQ-10)
-        attachments: false,
+        attachments: true,
         supervisor_cache: supervisorCache,
         device_registration: true,
       },

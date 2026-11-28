@@ -24,6 +24,7 @@ import {
 } from './shift-repositories';
 import {
   db,
+  type AttachmentRow,
   type ClientJournalEntry,
   type SyncStateRow,
 } from './schema';
@@ -810,6 +811,95 @@ export async function listLocalReviews(): Promise<JournalReview[]> {
   return rows.sort((left, right) =>
     right.reviewed_at.localeCompare(left.reviewed_at),
   );
+}
+
+const MAX_SCAN_BYTES = 20 * 1024 * 1024;
+const MAX_SCAN_PAGES = 10;
+
+/**
+ * Create one offline paper-permit scan and its upload operation. The PDF Blob
+ * lives in the per-user IndexedDB; PostgreSQL will only receive metadata after
+ * the server upload succeeds.
+ */
+export async function createPermitScan(
+  entryId: string,
+  pdf: Blob,
+  pages: number,
+  sha256: string,
+  user: ApiUser,
+): Promise<AttachmentRow> {
+  if (!Number.isInteger(pages) || pages < 1 || pages > MAX_SCAN_PAGES) {
+    throw new Error('Скан должен содержать от 1 до 10 страниц');
+  }
+  if (pdf.size <= 0 || pdf.size > MAX_SCAN_BYTES) {
+    throw new Error('Скан должен быть не больше 20 МБ');
+  }
+  if (pdf.type !== 'application/pdf') {
+    throw new Error('Скан должен быть PDF');
+  }
+  const existing = await db.attachments
+    .where('entry_id')
+    .equals(entryId)
+    .filter((row) => !row.deleted_at)
+    .first();
+  if (existing) {
+    throw new Error('У записи уже есть скан наряда');
+  }
+
+  const hlc = await newHlc();
+  const deviceId = await getDeviceId();
+  const id = uuidv7();
+  const now = new Date().toISOString();
+  const row: AttachmentRow = {
+    id,
+    entry_id: entryId,
+    kind: 'permit_scan',
+    mime_type: 'application/pdf',
+    pages,
+    sha256,
+    size_bytes: pdf.size,
+    status: 'local',
+    created_by: user.id,
+    created_at: now,
+    created_at_local: now,
+    blob: pdf,
+    last_error: null,
+  };
+  const operation: OutboxOperation = {
+    op_id: uuidv7(),
+    user_id: user.id,
+    device_id: deviceId,
+    entity_type: 'attachment',
+    entity_id: id,
+    op_type: 'create',
+    payload: {
+      entry_id: entryId,
+      pages,
+      sha256,
+      size_bytes: pdf.size,
+    },
+    field_clocks: {},
+    base_version: null,
+    hlc,
+    created_at: now,
+    attempts: 0,
+    next_attempt_at: null,
+    last_error_code: null,
+    last_error_message: null,
+    status: 'pending',
+    sent_at: null,
+    ack_at: null,
+  };
+
+  await db.transaction('rw', db.attachments, db.outbox, async () => {
+    await db.attachments.put(row);
+    await db.outbox.put(operation);
+  });
+  return row;
+}
+
+export async function listLocalAttachments(entryId: string): Promise<AttachmentRow[]> {
+  return db.attachments.where('entry_id').equals(entryId).toArray();
 }
 
 export async function saveConflicts(

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
@@ -9,6 +9,7 @@ import {
 } from '@logbook/shared';
 import { ABBREVIATIONS } from '@logbook/shared';
 import { db } from '../db/schema';
+import { api } from '../api/client';
 import {
   clearDraft,
   createLocalEntry,
@@ -22,6 +23,15 @@ import {
 import { useAuthStore } from '../stores/auth';
 import { useSyncStore } from '../stores/sync';
 import { PageHeader, Loader } from '../components/Page';
+import {
+  PermitScanField,
+  type ScanPayload,
+} from '../components/PermitScanField';
+import {
+  createPermitScan,
+  listLocalAttachments,
+} from '../db/repositories';
+import type { AttachmentRow } from '../db/schema';
 import {
   fromDateTimeInput,
   timezoneOffsetMinutes,
@@ -120,6 +130,14 @@ export function EntryEditorScreen(): JSX.Element {
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
+  const [scanPayload, setScanPayload] = useState<ScanPayload | null>(null);
+  const [scanBusy, setScanBusy] = useState(false);
+  const [scanExisting, setScanExisting] = useState<AttachmentRow | undefined>();
+  const scanReady = useCallback(
+    (payload: ScanPayload | null) => setScanPayload(payload),
+    [],
+  );
+  const scanBusyChange = useCallback((busy: boolean) => setScanBusy(busy), []);
 
   const data = useLiveQuery(async () => {
     const [workTypes, sites, permits, journals, entryData, draft] = await Promise.all([
@@ -132,6 +150,30 @@ export function EntryEditorScreen(): JSX.Element {
     ]);
     return { workTypes, sites, permits, journals, entryData, draft };
   }, [id, user?.id]);
+
+  useEffect(() => {
+    if (!id) {
+      setScanExisting(undefined);
+      return;
+    }
+    void listLocalAttachments(id).then((rows) => setScanExisting(rows[0]));
+  }, [id]);
+
+  useEffect(() => {
+    if (!id || scanExisting) return;
+    void api
+      .attachments(id)
+      .then(async (response) => {
+        if (response.items[0]) {
+          await db.attachments.put({
+            ...response.items[0],
+            created_at_local: response.items[0].created_at,
+          } as AttachmentRow);
+          setScanExisting(response.items[0] as AttachmentRow);
+        }
+      })
+      .catch(() => undefined);
+  }, [id, scanExisting]);
 
   useEffect(() => {
     if (!data || initialized.current) return;
@@ -169,8 +211,11 @@ export function EntryEditorScreen(): JSX.Element {
         performed_at_comment: entry.performed_at_comment ?? '',
         work_type_id: entry.work_type_id,
         site_id: entry.site_id ?? '',
-        permit_id: entry.permit_id ?? '',
-        permit_number_raw: entry.permit_number_raw ?? '',
+        permit_id: '',
+        permit_number_raw:
+          entry.permit_number_raw ??
+          data.permits.find((permit) => permit.id === entry.permit_id)?.number ??
+          '',
         text: entry.text,
         comment: entry.comment ?? '',
         permit_risk_flag: entry.permit_risk_flag,
@@ -215,10 +260,6 @@ export function EntryEditorScreen(): JSX.Element {
   const selectedWorkType = useMemo(
     () => data?.workTypes.find((type) => type.id === form.work_type_id),
     [data?.workTypes, form.work_type_id],
-  );
-  const selectedPermit = useMemo(
-    () => data?.permits.find((permit) => permit.id === form.permit_id),
-    [data?.permits, form.permit_id],
   );
   const serverCorrected =
     data?.entryData?.entry?.performed_at_source === 'server_corrected';
@@ -335,14 +376,10 @@ export function EntryEditorScreen(): JSX.Element {
     performed_at_comment: form.performed_at_comment || null,
     work_type_id: form.work_type_id,
     site_id: form.site_id || null,
-    permit_id: form.permit_id || null,
-    permit_number_raw: form.permit_id ? null : form.permit_number_raw || null,
-    permit_binding_status: form.permit_id
-      ? 'linked'
-      : form.permit_number_raw
-        ? 'unresolved'
-        : 'not_required',
-    permit_status_at_sync: selectedPermit?.status ?? null,
+    permit_id: null,
+    permit_number_raw: form.permit_number_raw || null,
+    permit_binding_status: form.permit_number_raw ? 'unresolved' : 'not_required',
+    permit_status_at_sync: null,
     permit_risk_flag: form.permit_risk_flag,
     permit_risk_reason: form.permit_risk_flag
       ? form.permit_risk_reason || null
@@ -359,6 +396,10 @@ export function EntryEditorScreen(): JSX.Element {
 
   const submit = async (): Promise<void> => {
     if (!user) return;
+    if (scanBusy) {
+      setMessage('Дождитесь сборки PDF скана');
+      return;
+    }
     setMessage(null);
     const payload = buildPayload();
     const parsed = entryPayloadSchema.safeParse(payload);
@@ -369,8 +410,8 @@ export function EntryEditorScreen(): JSX.Element {
         if (!nextErrors[key]) nextErrors[key] = issue.message;
       }
     }
-    if (selectedWorkType?.requires_permit && !form.permit_id && !form.permit_number_raw) {
-      nextErrors.permit_id = 'Для этого типа работ нужен наряд';
+    if (selectedWorkType?.requires_permit && !form.permit_number_raw) {
+      nextErrors.permit_number_raw = 'Для этого типа работ нужен номер наряда';
     }
     if (selectedWorkType?.requires_site && !form.site_id) {
       nextErrors.site_id = 'Укажите объект';
@@ -387,18 +428,27 @@ export function EntryEditorScreen(): JSX.Element {
     setSaving(true);
     try {
       const input = parsed.data as EntryPayload & Record<string, unknown>;
+      let entryId: string;
       if (isEdit && id) {
         await updateLocalEntry(id, input as Partial<EntryInput>, user);
+        entryId = id;
       } else {
         const created = await createLocalEntry(input as unknown as EntryInput, user);
         await clearDraft(user.id, null);
-        void sync();
-        navigate(`/entries/${created.id}`, { replace: true });
-        return;
+        entryId = created.id;
+      }
+      if (scanPayload && !scanExisting) {
+        await createPermitScan(
+          entryId,
+          scanPayload.pdf,
+          scanPayload.pages,
+          scanPayload.sha256,
+          user,
+        );
       }
       await clearDraft(user.id, id ?? null);
       void sync();
-      navigate(`/entries/${id}`, { replace: true });
+      navigate(`/entries/${entryId}`, { replace: true });
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : 'Не удалось сохранить');
     } finally {
@@ -908,35 +958,26 @@ export function EntryEditorScreen(): JSX.Element {
         <div className="form-row">
           <label className="field">
             <span>
-              Наряд {selectedWorkType?.requires_permit ? '*' : ''}
+              Номер наряда {selectedWorkType?.requires_permit ? '*' : ''}
             </span>
-            <select
-              value={form.permit_id}
-              onChange={(event) => update('permit_id', event.target.value)}
-            >
-              <option value="">— без наряда —</option>
-              {data.permits
-                .filter((permit) => !permit.is_deleted)
-                .map((permit) => (
-                  <option key={permit.id} value={permit.id}>
-                    {permit.number} · {permit.status}
-                  </option>
-                ))}
-            </select>
-            {errors.permit_id ? (
-              <span className="field__error">{errors.permit_id}</span>
-            ) : null}
-          </label>
-          <label className="field">
-            <span>Номер наряда вручную</span>
             <input
               type="text"
               value={form.permit_number_raw}
-              disabled={Boolean(form.permit_id)}
               onChange={(event) => update('permit_number_raw', event.target.value)}
-              placeholder="Например, НД-123/2026"
+              placeholder="Например, НД-ЭЛ-001/2026"
             />
+            {errors.permit_number_raw ? (
+              <span className="field__error">{errors.permit_number_raw}</span>
+            ) : null}
           </label>
+          <div className="field">
+            <span>Скан бумажного наряда</span>
+            <PermitScanField
+              existing={scanExisting}
+              onChange={scanReady}
+              onBusy={scanBusyChange}
+            />
+          </div>
         </div>
 
         <label className="field">

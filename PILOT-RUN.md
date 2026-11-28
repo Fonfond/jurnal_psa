@@ -22,7 +22,7 @@ curl http://localhost:3000/v1/health
 Ожидаемо:
 
 - `logbook-pilot-db` — healthy;
-- `logbook-pilot-seed` — exited 0, в логах `0001…0017`, `Seed complete: users=3, permits=6, entries=9, demo_data=true; ANALYZE done` (доменные демо-данные);
+- `logbook-pilot-seed` — exited 0, в логах `0001…0018`, `Seed complete: users=3, permits=6, entries=9, demo_data=true; ANALYZE done` (доменные демо-данные);
 - `logbook-pilot-app` — healthy;
 - health: `{"status":"ok","db":"ok"}`.
 
@@ -55,6 +55,18 @@ docker compose -f docker-compose.pilot.yml up --build -d
 ### Локальные учётные записи
 
 Администратор может создать пользователя в `/admin/users` и задать пароль (минимум 8 символов). Это локальная демо-учётка; в production — OIDC. Seed-учётки (`admin@…`, `supervisor@…`, `worker@…` / `Logbook!2026`) остаются для быстрого стенда.
+
+### Скан бумажного наряда
+
+В S-03 номер наряда вводится вручную; рядом — «Прикрепить скан наряда»:
+
+- камера/файл, до 10 страниц, до 20 МБ;
+- сжатие до 1600 px и JPEG 0.8, PDF собирается на клиенте;
+- PDF хранится в IndexedDB и уходит в object-volume после синхронизации записи;
+- один скан на запись; после загрузки ссылка — в S-05 «Документы»;
+- PDF **не** хранится в PostgreSQL, только metadata.
+
+Демо-данные уже содержат ELEC-скан на 2 стр. и HOT-скан на 8 стр. для проверки S-05.
 
 ## 3. Проверка на телефоне (HTTP)
 

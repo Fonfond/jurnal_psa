@@ -111,6 +111,10 @@ const envSchema = z
     EXPORT_SIGNING_SECRET: optionalString,
     EXPORT_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(900),
     EXPORT_PUBLIC_BASE_URL: optionalString,
+    /** Paper-permit scans: metadata in PostgreSQL, PDF in object storage. */
+    ATTACHMENTS_DIR: optionalString,
+    ATTACHMENT_SIGNING_SECRET: optionalString,
+    ATTACHMENT_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(900),
     RETENTION_YEARS: z.coerce.number().int().min(1).max(10).default(3),
     /** REP-05: daily retention scheduler (in-process; external cron may disable). */
     RETENTION_SCHEDULER_ENABLED: booleanString(),

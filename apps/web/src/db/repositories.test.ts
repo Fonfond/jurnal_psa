@@ -1,4 +1,4 @@
-﻿import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_JOURNAL_ID,
   SEED_UUIDS,
@@ -11,6 +11,7 @@ import {
   applyJournalReviews,
   applySnapshot,
   createLocalEntry,
+  createPermitScan,
   deleteLocalEntry,
   getLocalEntry,
   listLocalEntries,
@@ -303,6 +304,27 @@ describe('local entry repository', () => {
     const reviews = await listLocalReviews();
     expect(reviews).toHaveLength(1);
     expect(reviews[0]?.entries_count).toBe(5);
+  });
+  it('creates one offline permit scan and queues its upload', async () => {
+    const entry = await createLocalEntry(input, user);
+    const pdf = new Blob(['%PDF-1.4\n%%EOF\n'], { type: 'application/pdf' });
+    const attachment = await createPermitScan(
+      entry.id,
+      pdf,
+      2,
+      'a'.repeat(64),
+      user,
+    );
+    expect(attachment.status).toBe('local');
+    expect(await db.attachments.count()).toBe(1);
+    const operation = (await db.outbox.toArray()).find(
+      (row) => row.entity_type === 'attachment',
+    );
+    expect(operation?.payload).toMatchObject({ pages: 2, entry_id: entry.id });
+
+    await expect(
+      createPermitScan(entry.id, pdf, 2, 'b'.repeat(64), user),
+    ).rejects.toThrow('уже есть скан');
   });
 });
 

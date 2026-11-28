@@ -91,10 +91,11 @@ describe('Dexie schema', () => {
     database = new LogbookDatabase('logbook-test');
     await database.open();
 
-    expect(database.verno).toBe(5);
+    expect(database.verno).toBe(6);
     const tables = database.tables.map((table) => table.name).sort();
     expect(tables).toEqual(
       [
+        'attachments',
         'conflicts',
         'dict_departments',
         'dict_reasons',
@@ -199,7 +200,7 @@ describe('Dexie schema', () => {
     database = new LogbookDatabase('logbook-upgrade-test');
     await database.open();
 
-    expect(database.verno).toBe(5);
+    expect(database.verno).toBe(6);
     const stored = await database.entries.get(SEED_UUIDS.entry1);
     expect(stored?.journal_id).toBe(DEFAULT_JOURNAL_ID);
     expect(stored?.text).toContain('автоматический выключатель');

@@ -2,9 +2,12 @@ import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import type { SuperAgentTest } from 'supertest';
+import { createHash } from 'node:crypto';
+import { Readable } from 'node:stream';
 import { uuidv7 } from '@logbook/shared';
 import { seedDatabase } from '../../../db/seed/seed';
 import { AppModule } from '../src/app.module';
+import { ObjectStorageService } from '../src/attachments/object-storage.service';
 import { configureApp } from '../src/common/configure-app';
 import { runMigrations } from '../src/db/migrator';
 import { PgliteSqlClient } from '../src/db/pglite-client';
@@ -34,9 +37,17 @@ async function createContext(): Promise<TestContext> {
   await runMigrations(client);
   await seedDatabase(client, PASSWORD);
 
+  const storage = {
+    putPdf: jest.fn(async () => undefined),
+    getPdf: jest.fn(async () => Readable.from(Buffer.from('%PDF-1.4\n%%EOF\n'))),
+    remove: jest.fn(async () => undefined),
+  };
+
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(DB)
     .useValue(client)
+    .overrideProvider(ObjectStorageService)
+    .useValue(storage)
     .compile();
 
   const app = moduleRef.createNestApplication();
@@ -819,5 +830,77 @@ describe('dictionaries, audit and admin', () => {
       .get(`/v1/exports/${exportJob.body.id}`)
       .expect(200);
     expect(exportStatus.body.status).toBe('queued');
+  });
+});
+
+describe('paper permit scan attachment', () => {
+  it('uploads one PDF per entry idempotently and serves a signed URL', async () => {
+    const worker = await login(context.app, 'worker@logbook.local');
+    const pdf = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF\n');
+    const hash = createHash('sha256').update(pdf).digest('hex');
+    const entryId = SEED_ENTRY_WORKER;
+
+    const first = await worker.agent
+      .post(`/v1/entries/${entryId}/attachments`)
+      .set(authHeaders(worker.csrf))
+      .field('pages', '2')
+      .field('sha256', hash)
+      .attach('file', pdf, { filename: 'permit.pdf', contentType: 'application/pdf' })
+      .expect(201);
+    expect(first.body).toMatchObject({
+      entry_id: entryId,
+      kind: 'permit_scan',
+      mime_type: 'application/pdf',
+      pages: 2,
+      sha256: hash,
+      status: 'uploaded',
+    });
+
+    const replay = await worker.agent
+      .post(`/v1/entries/${entryId}/attachments`)
+      .set(authHeaders(worker.csrf))
+      .field('pages', '2')
+      .field('sha256', hash)
+      .attach('file', pdf, { filename: 'permit.pdf', contentType: 'application/pdf' })
+      .expect(201);
+    expect(replay.body.id).toBe(first.body.id);
+
+    const list = await worker.agent
+      .get(`/v1/entries/${entryId}/attachments`)
+      .expect(200);
+    expect(list.body.items).toHaveLength(1);
+
+    const signed = await worker.agent
+      .get(`/v1/entries/${entryId}/attachments/${first.body.id}`)
+      .expect(200);
+    expect(signed.body.url).toContain('/v1/attachments/download/');
+    expect(signed.body.expires_in).toBeLessThanOrEqual(900);
+
+    await request(context.app.getHttpServer())
+      .get(signed.body.url)
+      .expect(200)
+      .expect('Content-Type', /application\/pdf/);
+
+    const otherPdf = Buffer.from('%PDF-1.4\nother\n%%EOF\n');
+    await worker.agent
+      .post(`/v1/entries/${entryId}/attachments`)
+      .set(authHeaders(worker.csrf))
+      .field('pages', '1')
+      .field('sha256', createHash('sha256').update(otherPdf).digest('hex'))
+      .attach('file', otherPdf, { filename: 'other.pdf', contentType: 'application/pdf' })
+      .expect(400);
+  });
+
+  it('rejects more than 10 pages and non-PDF uploads', async () => {
+    const worker = await login(context.app, 'worker@logbook.local');
+    const pdf = Buffer.from('%PDF-1.4\nx\n%%EOF\n');
+    const hash = createHash('sha256').update(pdf).digest('hex');
+    await worker.agent
+      .post(`/v1/entries/${SEED_ENTRY_PLAIN}/attachments`)
+      .set(authHeaders(worker.csrf))
+      .field('pages', '11')
+      .field('sha256', hash)
+      .attach('file', pdf, { filename: 'permit.pdf', contentType: 'application/pdf' })
+      .expect(400);
   });
 });

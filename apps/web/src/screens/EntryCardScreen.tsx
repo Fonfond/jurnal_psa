@@ -8,11 +8,12 @@ import {
   type Shift,
 } from '@logbook/shared';
 import { api } from '../api/client';
-import { db } from '../db/schema';
+import { db, type AttachmentRow } from '../db/schema';
 import {
   applyServerEntry,
   deleteLocalEntry,
   getLocalEntry,
+  listLocalAttachments,
 } from '../db/repositories';
 import { useAuthStore } from '../stores/auth';
 import { useSyncStore } from '../stores/sync';
@@ -50,6 +51,8 @@ export function EntryCardScreen(): JSX.Element {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [signatures, setSignatures] = useState<SignatureRecord[]>([]);
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
+  const [localAttachmentUrl, setLocalAttachmentUrl] = useState<string | null>(null);
 
   const data = useLiveQuery(async () => {
     if (!id) return null;
@@ -71,7 +74,8 @@ export function EntryCardScreen(): JSX.Element {
             entry.performed_at <= row.period_end,
         ) ?? null;
     }
-    return { ...entryData, permit, shift };
+    const attachments = await listLocalAttachments(id);
+    return { ...entryData, permit, shift, attachments };
   }, [id]);
 
   useEffect(() => {
@@ -93,6 +97,40 @@ export function EntryCardScreen(): JSX.Element {
       cancelled = true;
     };
   }, [id, data?.entry?.sync_status]);
+
+  useEffect(() => {
+    if (!id) return undefined;
+    if (data?.attachments && data.attachments.length > 0) return undefined;
+    void api
+      .attachments(id)
+      .then(async (response) => {
+        if (response.items.length > 0) {
+          await db.attachments.bulkPut(response.items as AttachmentRow[]);
+        }
+      })
+      .catch(() => undefined);
+    return undefined;
+  }, [id, data?.attachments?.length]);
+
+  const attachment: AttachmentRow | undefined = data?.attachments?.[0];
+  useEffect(() => {
+    if (!id || !attachment) return undefined;
+    setAttachmentUrl(null);
+    if (attachment.blob) {
+      const url = URL.createObjectURL(attachment.blob);
+      setLocalAttachmentUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setLocalAttachmentUrl(null);
+    const serverId = attachment.server_id ?? attachment.id;
+    if (serverId) {
+      void api
+        .attachmentUrl(id, serverId)
+        .then((response) => setAttachmentUrl(response.url))
+        .catch(() => undefined);
+    }
+    return undefined;
+  }, [id, attachment?.blob, attachment?.server_id, attachment?.id]);
 
   if (!data) {
     return <Loader label="Загружаем запись…" />;
@@ -372,6 +410,38 @@ export function EntryCardScreen(): JSX.Element {
           <SignatureBadge signature={signatures[0]!} />
         ) : null}
       </article>
+
+      <section className="card" aria-labelledby="documents-heading">
+        <h2 id="documents-heading">Документы</h2>
+        {!attachment ? (
+          <p className="muted">Скан бумажного наряда не прикреплён.</p>
+        ) : (
+          <div className="attachment-card">
+            <p>
+              <strong>Скан наряда</strong> · {attachment.pages} стр. ·{' '}
+              {(attachment.size_bytes / 1024 / 1024).toFixed(2)} МБ ·{' '}
+              {attachment.status}
+            </p>
+            <p className="hint">
+              Копия бумажного наряда. Оригинал хранится на объекте.
+            </p>
+            {attachmentUrl || localAttachmentUrl ? (
+              <a
+                className="button button--ghost"
+                href={attachmentUrl ?? localAttachmentUrl ?? '#'}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Открыть скан
+              </a>
+            ) : (
+              <p className="hint">
+                Скан хранится локально и откроется после загрузки/синхронизации.
+              </p>
+            )}
+          </div>
+        )}
+      </section>
 
       <section className="card">
         <h2>История изменений</h2>

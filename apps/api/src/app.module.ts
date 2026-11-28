@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AdminModule } from './admin/admin.module';
+import { AttachmentModule } from './attachments/attachment.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { AllExceptionsFilter } from './common/all-exceptions.filter';
@@ -22,6 +23,7 @@ import { SyncModule } from './sync/sync.module';
   imports: [
     DbModule,
     AuthModule,
+    AttachmentModule,
     DevicesModule,
     JournalModule,
     JournalsModule,

@@ -1,4 +1,4 @@
-﻿import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   SEED_UUIDS,
   type ConflictRecord,
@@ -10,6 +10,7 @@ import { ApiError } from '../api/client';
 import type { ApiUser } from '../api/types';
 import {
   createLocalEntry,
+  createPermitScan,
   failOperation,
   getLocalEntry,
   getSyncCursor,
@@ -97,6 +98,41 @@ beforeEach(async () => {
 });
 
 describe('SyncEngine', () => {
+  it('uploads a queued permit scan after the entry push', async () => {
+    const entry = await createLocalEntry(input, user);
+    await createPermitScan(
+      entry.id,
+      new Blob(['%PDF-1.4\n%%EOF\n'], { type: 'application/pdf' }),
+      2,
+      'a'.repeat(64),
+      user,
+    );
+    const upload = vi.fn(async () => ({
+      id: 'attachment-server-1',
+      entry_id: entry.id,
+      kind: 'permit_scan' as const,
+      mime_type: 'application/pdf' as const,
+      pages: 2,
+      sha256: 'a'.repeat(64),
+      size_bytes: 14,
+      status: 'uploaded' as const,
+      created_by: user.id,
+      created_at: new Date().toISOString(),
+    }));
+    const engine = new SyncEngine({
+      apiClient: makeApi({ uploadAttachment: upload }),
+      online: () => true,
+      currentUser: () => ({ id: user.id, role: user.role }),
+    });
+
+    await engine.syncNow();
+
+    expect(upload).toHaveBeenCalledTimes(1);
+    const row = await db.attachments.where('entry_id').equals(entry.id).first();
+    expect(row?.status).toBe('uploaded');
+    expect(row?.server_id).toBe('attachment-server-1');
+  });
+
   it('pushes an operation, applies the merged entry and clears the outbox', async () => {
     const local = await createLocalEntry(input, user);
     const apiMock = makeApi({
